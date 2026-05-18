@@ -23,11 +23,11 @@ This limitation is symptomatic of a broader fragmentation. If one surveys the li
 
 Each river has produced state-of-the-art components, yet none addresses all five requirements simultaneously: (a) pixel-level cross-modal representation, (b) data-quality-adaptive dynamic fusion, (c) temporal phenology awareness, (d) long-tail species balance, and (e) agent-based orchestration. The components are individually mature but architecturally isolated.
 
-This survey addresses this gap through a design-space analysis. Rather than proposing a new model, we systematically decompose a forest phenotyping system into five orthogonal design dimensions, enumerate the candidate solutions for each, compare them on quantitative benchmarks, and derive selection rationales. We then analyze cross-dimensional dependencies that make independent per-dimension optimization insufficient, and propose an integration roadmap composed exclusively of components whose capabilities have been empirically verified in published work. The contributions of this survey are threefold:
+This survey addresses this gap through a systematic analysis. The contributions are threefold:
 
-1. **A five-dimensional design-space framework** that maps the architectural decision points in building an integrated forest phenotyping system, with each dimension's candidate space populated from the 2023–2026 literature.
-2. **Quantitative selection rationales** grounded in original paper results rather than qualitative claims—every recommendation is supported by specific numerical comparisons (e.g., "DUNIA's tree height RMSE of 1.3 m vs. AnySat's 2.8 m under 100% labels justifies DUNIA as the base encoder" rather than "DUNIA is better").
-3. **A validation roadmap** comprising concrete, falsifiable experiments for each remaining gap, framed as "needs verification" hypotheses rather than speculative "will achieve" claims.
+1. **A structured methodological survey** covering contrastive representation learning, dynamic multimodal fusion, LLM-based agent orchestration, temporal phenology modeling, and data quality awareness—with all performance claims supported by quantitative comparisons drawn from original papers.
+2. **A systematic characterization of six forest-specific transfer barriers** (multi-layer occlusion, mixed-species degradation, LiDAR saturation, terrain effects, cross-site generalization, and long-tail distributions), each grounded in quantitative evidence from forestry, remote sensing, and ecology literature.
+3. **A set of research directions** identifying the methodological gaps that must be closed for AI phenotyping to become viable in natural forest settings, with the construction of a forest-specific multi-modal benchmark identified as the highest-priority action.
 
 ---
 
@@ -71,9 +71,9 @@ Three critical data gaps emerge: (1) no dataset simultaneously provides satellit
 
 ---
 
-## 3. A Design-Space Perspective on Forest Phenotyping
+## 3. A Methodological Survey of Vegetation Phenotyping Methods
 
-We decompose a forest phenotyping system into five design dimensions. For each, we catalog the candidate architectural choices, compare them on quantitative benchmarks, and identify the selection rationale based on verified experimental evidence.
+We organize the 2023–2026 methodological landscape along five analytical dimensions. For each, we catalog the candidate architectural choices, compare them on quantitative benchmarks, and identify the validation gaps that are most relevant to forest transferability.
 
 ### 3.1 Encoder Design
 
@@ -209,7 +209,7 @@ Input-level concatenation (Option A) is architecturally the simplest but provide
 
 #### 3.4.4 Identified Gap: No Method Does Both Cross-Modal Pixel Alignment and Temporal Phenology
 
-DUNIA achieves pixel-level cross-modal alignment but is temporally static. AnySat achieves multi-temporal classification but is patch-level with weak vertical structure. No existing method simultaneously provides: (a) pixel-level cross-modal embeddings (DUNIA's strength), (b) temporal phenology awareness (AnySat's strength), and (c) zero-shot forest parameter estimation (DUNIA's unique capability). Closing this gap requires extending DUNIA's encoder with a Temporal Transformer module while preserving its Zero-CL loss and dual-decoder architecture, then jointly pretraining on multi-temporal Sentinel-1/2 + GEDI waveform data. The specific experimental design for validating this integration is outlined in Section 6.
+DUNIA achieves pixel-level cross-modal alignment but is temporally static. AnySat achieves multi-temporal classification but is patch-level with weak vertical structure. No existing method simultaneously provides: (a) pixel-level cross-modal embeddings (DUNIA's strength), (b) temporal phenology awareness (AnySat's strength), and (c) zero-shot forest parameter estimation (DUNIA's unique capability). Closing this gap would require extending DUNIA's encoder with a Temporal Transformer module while preserving its Zero-CL loss and dual-decoder architecture, then jointly pretraining on multi-temporal Sentinel-1/2 + GEDI waveform data. This gap, along with the five others identified across the remaining dimensions, is summarized in Section 6.
 
 ---
 
