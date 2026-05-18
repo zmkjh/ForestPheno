@@ -1,8 +1,8 @@
-# A Design-Space Perspective on Forest Phenotyping: From Static Classification to Agent-Orchestrated Multimodal Intelligence
+# Remote Sensing-based Vegetation Phenotyping in the AI Era: Methods, Benchmarks, and the Forest Transfer Challenge
 
 ## Abstract
 
-Forest phenotyping stands at a critical juncture in mid-2026. Four technological streams—foundation models, dynamic multimodal fusion, pixel-level contrastive representation learning, and LLM-based agent orchestration—have each produced mature components, yet no system integrates all four. This survey provides a systematic design-space analysis of forest phenotyping through five orthogonal dimensions: encoder design, multimodal fusion strategy, agent orchestration, temporal phenology modeling, and data quality awareness. For each dimension, we enumerate candidate architectural choices, compare them on quantitative benchmarks derived from original papers, and identify selection rationales grounded in verified experimental evidence. We further analyze cross-dimensional dependencies that preclude independent optimization, propose an integration roadmap built on validated components (DUNIA pixel-level embeddings, DCMNet dynamic routing, PhenoAssistant agent orchestration, TaxoNet dual-margin long-tail balancing), and define a QUEST-Forest evaluation framework with forest-specific metrics including tail-recall, cost-weighted error rates, and open-set detection benchmarks. We conclude by cataloging specific validation experiments required to bridge the five remaining gaps, each formulated as a falsifiable hypothesis with proposed experimental design.
+Between 2023 and 2026, AI-driven vegetation phenotyping methodology has advanced rapidly across multiple fronts: pixel-level contrastive representation learning, dynamic multimodal fusion, LLM-based agent orchestration, and temporal phenology modeling. These methods have been validated predominantly on agricultural and urban benchmarks—Houston2013, Trento, PASTIS, Auto-Arborist, and individual street-tree datasets. However, their performance in natural forest settings remains almost entirely unexamined. This survey provides an analytical review of the 2023–2026 methodological landscape and then systematically identifies five physical barriers that distinguish forest phenotyping from its agricultural counterpart: (1) multi-layer canopy occlusion, which pushes individual-tree detection F1 down to 0.45–0.72; (2) mixed-species canopy complexity, which degrades classification by approximately 21% relative to monoculture; (3) LiDAR biomass saturation above 300 Mg/ha; (4) terrain-induced accuracy losses of 5–12% on slopes exceeding 30°; and (5) cross-site generalization drops of 20–40%. Each barrier is grounded in quantitative evidence drawn from eight forestry-specific surveys. Rather than prescribing an integration roadmap, the paper identifies what existing methods can and cannot do for forests, and outlines the research directions required to close the gap—foremost among them, the construction of a forest-specific multimodal benchmark.
 
 ---
 
@@ -12,7 +12,7 @@ Global forests sequester approximately 7.6 billion metric tons of CO₂ annually
 
 Remote sensing has partially closed this gap. Satellite constellations (Sentinel-1/2, Landsat, PlanetScope) provide wall-to-wall coverage at 10–30 m resolution; airborne laser scanning (ALS) campaigns such as France's Lidar HD program deliver point densities exceeding 40 pts/m² [3]; and unoccupied aerial vehicles (UAVs) equipped with RGB, multispectral, hyperspectral (HSI), and thermal sensors enable centimeter-level individual tree crown (ITC) observation. The challenge is no longer data scarcity but *data integration*: how to combine heterogeneous modalities—each with distinct spatial resolutions (0.05 m UAV to 250 m MODIS), spectral ranges (visible to shortwave infrared), and temporal cadences (daily to decadal)—into a coherent phenotyping pipeline.
 
-A pivotal development arrived in April 2026 when Chen et al. published PhenoAssistant in *Nature Communications*, demonstrating that a large language model (LLM)-based multi-agent system could orchestrate computer vision tools, statistical analyses, and natural language explanations for plant phenotyping tasks with 100% tool selection accuracy [4]. PhenoAssistant marks the entry of agent-based orchestration into plant sciences, but its architecture reveals a structural limitation that defines the opportunity space for this survey: it orchestrates *which tool* processes *which sub-task*, but does not dynamically adjust *how* multimodal data are fused based on input quality or scene context. The fusion strategies of the underlying vision models remain static, predetermined at design time.
+A pivotal development arrived in April 2026 when Chen et al. published PhenoAssistant in *Nature Communications*, demonstrating that a large language model (LLM)-based multi-agent system could orchestrate computer vision tools, statistical analyses, and natural language explanations for plant phenotyping tasks with 100% tool selection accuracy [4]. PhenoAssistant marks the entry of agent-based orchestration into plant sciences; however, its evaluation—like virtually all the methods reviewed in this survey—was conducted on curated agricultural and urban datasets. These methods perform well on benchmarks, but they have almost never been tested in natural forest settings. The gap between agricultural phenotyping performance and forest transferability defines the problem space for this survey.
 
 This limitation is symptomatic of a broader fragmentation. If one surveys the literature from 2023 to 2026, one observes what the Timeline Analysis in prior work termed "four rivers flowing in parallel":
 
@@ -98,18 +98,9 @@ Seven encoder paradigms have been evaluated under unified experimental settings 
 
 DUNIA's zero-shot performance is particularly relevant for forest scenarios with limited ground measurements. With KNN=50 and a retrieval database of 50K labeled pixels (~31 km², approximately 0.25% of the data required by supervised methods), DUNIA achieves: tree height RMSE 2.0 m (r = 0.93) vs. supervised SOTA FORMS at 5.2 m (r = 0.77); canopy cover RMSE 11.7% (r = 0.89) vs. FORMS 22.1% (r = 0.54); PAI RMSE 0.71 (r = 0.75) vs. FORMS 1.5 (r = 0.35); and tree species wF1 76.0% (KNN=5) vs. supervised SOTA 74.6% [9].
 
-#### 3.1.2 Selection Rationale
+#### 3.1.2 Comparative Observations
 
-**DUNIA is recommended as the base encoder** for the following evidence-supported reasons, mapped to the design requirements:
-
-- **Pixel-level granularity (P0 requirement)**: DUNIA is the only method in the comparison achieving pixel-level cross-modal embeddings (64-dim output projection, 10 m/pixel). AnySat, CROMA, SatMAE, and DOFA all output patch-level embeddings, which are insufficient for ITC-level parameter mapping. The individual tree crown—typically spanning 3–30 m²—requires pixel-level spatial precision.
-- **Cross-modal fusion (P0 requirement)**: DUNIA's Zero-CL loss achieves cross-modal alignment between Sentinel-1/2 pixels and GEDI waveforms with positive-pair cosine similarity of 0.86, compared to 0.56 for VICReg under identical batch conditions (average ~26 waveforms per batch) [9]. The ZCA whitening step that enables this was an architectural innovation specifically motivated by the sparsity of waveform samples per batch.
-- **Zero/few-shot capability (P0 requirement)**: DUNIA's zero-shot tree height (RMSE 2.0 m) already surpasses the fully supervised FORMS baseline (5.2 m). At 20% label fraction, vertical structure performance is near-lossless (RMSE 1.4 m vs. 1.3 m at full labels, a negligible 0.1 m degradation). This label efficiency is critical for forest applications where ground measurements are expensive and sparse.
-- **Computational efficiency**: DUNIA trains on a single A6000 48GB GPU. Inference on a 20.48 × 20.48 km area (4.2M pixels) completes in 4.22 s, compared to AnySat's 177 s (~40× slower). This single-GPU feasibility enables region-specific retraining, which is essential given the known domain sensitivity of pretrained forest models.
-
-**Why not AnySat?** AnySat achieves the best classification performance (PureForest wF1 82.3, PASTIS wF1 81.1) and has native multi-temporal support. However, its patch-level output cannot perform pixel-level tree crown parameter mapping. Its vertical structure estimation is significantly weaker (height RMSE 2.8 m vs. DUNIA 1.3 m, a 1.5 m gap), and inference is 40× slower, making it impractical for large-area forest monitoring. AnySat's strategic value is as a *complement* to DUNIA: its temporal patch embeddings can supply the phenological signal that DUNIA currently lacks.
-
-**Why not SatMAE/DOFA?** These MAE-based optical-only foundation models have no vertical structure awareness, producing tree height RMSE exceeding 10 m. The MAE paradigm requires substantial labeled fine-tuning data, and neither method provides zero-shot capability. Their optical-only design precludes integration of LiDAR and SAR, which are indispensable for forest structural parameter estimation.
+DUNIA achieves the lowest tree height RMSE (1.3 m fine-tuned, 2.0 m zero-shot) and 4.22 s inference on 20 km²—the only pixel-level encoder in the comparison. AnySat achieves the highest species classification on PureForest (wF1 82.3) with native multi-temporal support, but produces patch-level embeddings and is 40× slower at inference. CROMA, SatMAE, DOFA, and DeCUR all operate at patch-level and show tree height RMSE ≥3.5 m, with zero-shot performance substantially below DUNIA. The key unresolved question—for forest applications specifically—is whether a single encoder can simultaneously deliver pixel-level cross-modal alignment and temporal phenology awareness (Section 3.6).
 
 #### 3.1.3 Identified Gap: Temporal Phenology
 
@@ -147,14 +138,9 @@ Table 3 compares the five leading fusion paradigms on quantitative benchmarks. A
 
 **IFGNet (2026)** achieved the highest reported accuracy (Houston2013 OA 99.37%, Kappa 99.32%) by replacing fixed activation functions with KAN B-spline functions, which model continuous nonlinear relationships through learnable spline coefficients. Its spatial implicit aggregation unit (SIAU) uses LiDAR-guided KAN-based neighborhood feature sampling: v(k)_q = Φ_KAN([f_HSI_xk, f_LiDAR_q, q - xk]). The B-spline local support property is naturally suited for modeling gradual phenological transitions. However, IFGNet's code is not open-source as of the original paper's publication, limiting reproducibility [8].
 
-#### 3.2.2 Selection Rationale
+#### 3.2.2 Comparative Observations
 
-The fusion strategy should be a composite rather than a single method, selected per-scenario based on the following evidence:
-
-- **For efficiency-critical large-area deployment**: **MSFMamba** is recommended. Its O(n) linear complexity, 1.53M parameter footprint, and 0.175 s inference time make it the only method practical for wall-to-wall forest cover mapping at regional scales. The Fus-Mamba architecture's natural support for a third input source (agent conditioning) provides the cleanest integration path for agent-controlled fusion.
-- **For accuracy-critical species classification**: **DCMNet** routing offers the highest verified accuracy on heterogeneous scenes (Trento OA 98.96%, Houston2013 OA 95.11%). Its routing gate accepts a single vector input, making agent-condition injection architecturally straightforward (~10 lines of code: adding an agent context embedding to the FC layer input).
-- **For phenology-aware fusion**: **DFFNet's** frequency-domain filtering is conceptually closest to phenological signal processing. The dynamic frequency kernel K(X) = Softmax(MLP(GAP(X))) ⊗ F_base can in principle learn different band-pass characteristics for different phenological stages, though this specific capability has not been empirically verified.
-- **For few-shot deployment with agent integration**: **FusDreamer** is the only method that combines few-shot robustness with a natural language control interface. The zero-architecture-modification path for agent control (replacing hard-coded prompts with agent-generated prompts) makes it suitable for rapid prototyping of agent-controlled fusion, albeit with significant inference latency (16–67 s per sample).
+The five fusion paradigms exhibit a clear accuracy progression: MSFMamba (OA 92.86%, 1.53M params) → DFFNet (92.35%) → DCMNet (95.11%) → IFGNet (99.37%), with FusDreamer occupying a distinct niche at 96.36% under few-shot conditions. However, all five methods were evaluated on urban HSI-LiDAR benchmarks (Houston2013, Trento). None has been tested on forest scenes with overlapping canopies, mixed species, or terrain relief exceeding 20°. The transition from IFGNet's B-spline functional fusion to forest-viable fusion remains unevaluated. A gap common to all five methods is the absence of external quality signal injection: fusion decisions are driven solely by internal feature statistics, not by acquisition conditions such as cloud cover, LiDAR point density, or SAR coherence (Section 3.5).
 
 #### 3.2.3 Identified Gap: External Quality Signal Injection
 
@@ -176,15 +162,9 @@ Three agent paradigms have been demonstrated in the plant/foresetting domain, wi
 
 **LEMON (2026)** [12] introduced counterfactual reinforcement learning for optimizing multi-agent orchestration specifications. Using Group Relative Policy Optimization (GRPO) with local counterfactual signals on role/capability/dependency fields, LEMON learns to generate optimal orchestrator configurations. It achieved SOTA on MMLU, GSM8K, AQuA, MultiArith, SVAMP, and HumanEval benchmarks. While LEMON has not been applied to plant/forest phenotyping, its methodology is directly transferable: the agent orchestration policy (which models to invoke, in what order, with what parameters) under different data quality conditions could be learned via RL rather than hard-coded.
 
-#### 3.3.2 Selection Rationale
+#### 3.3.2 Comparative Observations
 
-**The LLM should orchestrate, not perceive.** PhenoAssistant's failure analysis provides the critical evidence: all 3/20 data analysis task failures were due to LLM fine-grained visual reasoning errors, while tool selection achieved 100% accuracy. This asymmetry indicates that LLMs are reliable *orchestrators* (selecting which tool to use) but unreliable *perceivers* (interpreting fine-grained visual or quantitative data). The correct architectural separation is:
-
-- **Manager Agent (LLM)**: Task decomposition, tool selection, parameter specification, result aggregation, natural language explanation.
-- **Dedicated Vision Models**: Segmentation (Mask2Former, SAM), feature extraction (DUNIA encoder), classification (DCMNet fusion head), structural parameter estimation.
-- **Deterministic Modules**: Statistical tests (ANOVA, Tukey-Kramer), quantitative phenotyping computations (LAI from crown area, height from CHM), database queries.
-
-SAGE's anatomy-indexed filtering provides a transferable design pattern for forest species identification: a structured forestry knowledge base (e.g., digitized *Flora of China*, regional forest inventory data) can perform organ/region/phenology-indexed filtering to narrow the candidate species set before invoking a vision classifier. The critical requirement is source-grounding—every knowledge base entry must carry a verifiable citation—to enable expert audit of agent reasoning.
+PhenoAssistant's 100% tool selection accuracy and SAGE's +16.2 pp diagnostic improvement demonstrate that LLMs can reliably orchestrate scientific tool chains when the perception task is delegated to dedicated vision models. The key architectural insight from PhenoAssistant's failure analysis is that all 3/20 errors originated from fine-grained LLM visual reasoning, while tool selection was flawless—suggesting the LLM role is best scoped to orchestration, not perception. SAGE's anatomy-indexed filtering pattern (organ identification → disease filtering → KB matching) is conceptually transferable to forestry: a source-grounded knowledge base indexed by phenology, geography, and taxonomy could narrow candidate species sets before invoking a vision classifier. All three agent paradigms—PhenoAssistant, SAGE, LEMON—have been validated on agricultural or general benchmarks; none has been tested on forest phenotyping tasks.
 
 #### 3.3.3 Identified Gap: From Tool Orchestration to Fusion Strategy Orchestration
 
@@ -223,15 +203,9 @@ Table 4 compares the three options on key design dimensions.
 | Time-position awareness | No | Yes (DOY PE) | Partial (via loss) |
 | Compatibility with DUNIA Zero-CL | Yes | Yes (requires adaptation) | Yes (parallel use) |
 
-#### 3.4.3 Selection Rationale
+#### 3.4.3 Comparative Observations
 
-**Option B (Temporal Transformer) + Option C (alignment loss) as regularization** is recommended. The justification is threefold:
-
-1. *Input-level concatenation is insufficient for phenology.* CNN-based encoders operating on concatenated inputs are insensitive to temporal ordering. An encoder trained on April–July–October concatenation cannot distinguish a budburst-at-day-100 + senescence-at-day-300 pattern from a budburst-at-day-300 + senescence-at-day-100 pattern—yet these are ecologically opposite states.
-2. *Post-hoc alignment cannot compensate for encoder blindness.* If the base encoder was trained on single-date medians (as DUNIA was), it has already learned to treat spectral features without temporal context. The same reflectance value in spring (indicating healthy budburst) and autumn (indicating delayed senescence) maps to the same encoding—the encoder simply lacks the temporal dimension needed to disambiguate.
-3. *Temporal Transformer provides global context while maintaining compatibility.* The shared-weight spatial encoder preserves DUNIA's pixel-level cross-modal embeddings (Zero-CL with GEDI waveforms), while the temporal self-attention layers add phenological context that propagates gradient signals back to the spatial encoder through the Siamese architecture.
-
-A practical deployment strategy suggested by existing results: start with 3 bimonthly Sentinel-2 composites (spring/ summer/ autumn) and Option A as a quick validation baseline to confirm temporal gain exists; then transition to 6–12 monthly composites with Option B for full phenological cycle modeling; finally add Option C as a regularizer to enforce smooth phenological trajectories.
+Input-level concatenation (Option A) is architecturally the simplest but provides no temporal ordering awareness—an encoder trained on April–July–October concatenation cannot distinguish budburst-at-day-100 from budburst-at-day-300. Temporal Transformer (Option B) provides explicit DOY positional encoding and global temporal attention but requires encoder architectural modification. Post-hoc alignment loss (Option C) can serve as a regularizer without architectural changes but cannot compensate for a base encoder that was trained on single-date medians and has no capacity to learn temporal disambiguation. No existing method simultaneously delivers pixel-level cross-modal alignment (DUNIA's strength) and temporal phenology awareness (AnySat's strength)—both are required for forest phenotyping of deciduous mixed stands.
 
 #### 3.4.4 Identified Gap: No Method Does Both Cross-Modal Pixel Alignment and Temporal Phenology
 
@@ -272,11 +246,11 @@ The core unresolved design question is: *given a quality vector q = [cloud_pct, 
 
 ---
 
-## 4. Toward Integration: Cross-Dimensional Dependencies
+## 4. The Forest Transfer Gap
 
-The five design dimensions analyzed in Section 3 are not independent. Optimizing each in isolation leads to a locally optimal but globally incoherent system. This section identifies the critical cross-dimensional dependencies and proposes an integration roadmap.
+The five design dimensions analyzed in Section 3 have been validated almost exclusively on agricultural and urban benchmarks. Transferring these methods to natural forest settings introduces physical challenges that current benchmarks do not capture. This section analyzes six cross-dimensional dependencies that arise specifically from the demands of forest environments.
 
-### 4.1 Dependency Map
+### 4.1 What the Forest Setting Demands That Current Benchmarks Don't Test
 
 Figure 1 illustrates the five design dimensions and their six cross-dimensional dependencies.
 
@@ -328,70 +302,67 @@ graph TB
 
 **D-6: Agent Orchestration → Encoder + Temporal Phenology (unidirectional).** The agent's task specification determines which encoder outputs are relevant. A "map canopy height" task requires vertical structure embeddings (DUNIA's OV decoder output); a "classify tree species" task requires horizontal embeddings (OH decoder output) with temporal context; a "detect drought stress" task requires both with anomaly detection capability. If the agent orchestrates the fusion strategy, it must also be able to route encoder outputs appropriately—selecting which decoder branch, which time steps, and which embedding dimensions to forward to downstream modules.
 
-### 4.2 Why Independent Optimization Fails
+### 4.2 Forest-Specific Transfer Barriers
 
-Consider a scenario where each dimension is optimized independently:
-- Encoder: DUNIA is selected for pixel-level cross-modal embeddings (RMSE 1.3 m height, 4.22 s inference).
-- Temporal: Option B (Temporal Transformer) is added on top.
-- Fusion: DCMNet is selected for dynamic routing (Trento OA 98.96%).
-- Quality: s2cloudless + LiDAR density metrics are computed.
-- Agent: PhenoAssistant-style Manager dispatches tasks.
+The dependencies described above are structural—they exist regardless of whether the target domain is a maize field or a tropical forest. However, natural forests impose six physical constraints that agricultural and urban benchmarks do not capture, each of which directly stresses one or more of the D1–D6 dependencies.
 
-This naive combination produces several failures: (1) DCMNet's routing gate receives F_h + F_l from the temporal transformer outputs, but the gate has no access to quality scores—it routes based on feature statistics that may be artifact-contaminated (cloud-induced spectral anomalies). (2) The agent selects the vision model but has no interface to tell DCMNet "cloud cover is high, weight LiDAR more." (3) The temporal transformer operates on multi-date inputs, but DUNIA's pretrained spatial encoder weights were optimized for single-date medians—the domain shift between median composite and individual date images is unaccounted for.
+#### 4.2.1 Multi-Layer Canopy Occlusion
 
-### 4.3 Integration Roadmap
+In agricultural settings, crop canopies are approximately planar—individual plants are spatially separated, of uniform height, and planted at known density. In natural forests, the canopy is vertically stratified into overstory, midstory, and understory layers. Top-down remote sensing (ALS, UAV-LiDAR, optical) sees predominantly the upper canopy; mid- and understory trees are occluded.
 
-Based on the dependency analysis and the availability of verified components, we propose a three-phase integration roadmap. Each phase is composed of components whose individual performance has been empirically validated; the integration itself is the novel contribution.
+Quantitatively, Beloiu et al. (2023) reported individual-tree crown detection F1 ranging from 0.45 to 0.72 in heterogeneous temperate forests using aerial RGB, with the lowest performance on suppressed sub-canopy trees [38]. Silwal et al. (2024), simulating a mixed Harvard Forest scene via DIRSIG radiative transfer, found that even under optimal 1 m resolution conditions, a 1D-CNN could identify only 16 of 24 genus-level classes, and at 30 m resolution this dropped to 7 of 24 (OA 54.09%) [39]. Sivanandam et al. (2022) reported that tree detection mAP in dense, overlapping eucalyptus canopies fell to approximately 0.50, compared to 0.65+ in open areas, with different species frequently merged into single segments [40]. SegmentAnyTree (2024), the only ITCD model that explicitly evaluates performance across canopy layers, was demonstrated on dense terrestrial and mobile laser scanning data (TLS/MLS/ULS)—not on above-canopy ALS or UAV imagery [41]. The Zhao et al. (2023) systematic review of CNN-based ITCD identifies multi-layer detection as a key unsolved gap [42].
 
-**Phase 1: Quality-Aware Static Fusion (verified components only).** 
-- Encoder: DUNIA (verified: height RMSE 1.3 m, cross-modal alignment cosine 0.86).
-- Quality assessment: s2cloudless (verified: 88–92% cloud detection F1) + LiDAR point density computation.
-- Fusion: MSFMamba with quality-adaptive dropout training (verified: MSFMamba Houston2013 OA 92.86%; ActionMAE dropout robustness validated in video domain).
-- Agent: Manual quality-to-strategy rules (if-else logic based on cloud_pct and lidar_density thresholds), not yet LLM-driven.
-- Validation metric: OA improvement of quality-weighted fusion over equal-weight fusion on synthetically degraded Houston/Trento data.
+The implication for the design dimensions is direct: **D2 (Encoder → Fusion)** —patch-level encoders lose within-patch vertical heterogeneity; **D3 (Quality → Fusion)** —no existing quality signal encodes occlusion depth; **D1 (Encoder ↔ Temporal)** —leaf-off acquisitions can penetrate deciduous canopies but current encoders lack seasonal awareness.
 
-**Phase 2: Agent-Controlled Dynamic Fusion.**
-- Encoder: DUNIA + Temporal Transformer (Bimonthly S-2 composites), with temporal self-attention preserving Zero-CL alignment.
-- Quality: Replace manual rules with Agent quality interpreter—LLM receives structured quality report, outputs fusion strategy JSON.
-- Fusion: Agent conditions injected into DCMNet routing gate (FiLM-style: W = FC(ReLU(FC(F_h + F_l + X) + AgentEmbedding))).
-- Agent: LangGraph SupervisorGraph with quality-aware conditional routing + AutoGen conversational interface.
-- Validation metric: Agent strategy selection agreement rate with expert-designed optimal strategies; OA under real (non-synthetic) cloud cover variation.
+#### 4.2.2 Mixed-Species vs. Monoculture Degradation
 
-**Phase 3: End-to-End Quality-Adaptive Agent Orchestration.**
-- Full integration: Quality Sensor → Agent → Fusion Strategy → Encoder → Temporal Analysis → Output. 
-- Agent not only selects models and fusion strategies but can request additional data acquisition (e.g., "cloud cover too high for optical species identification; schedule SAR acquisition or wait for next Sentinel-2 overpass").
-- Knowledge base: Forestry domain knowledge (structured Flora, phenological calendars, regional forest inventory) integrated as SAGE-style source-grounded KB for agent reasoning.
-- Validation: End-to-end task completion rate on ForestPheno-Bench (Section 5).
+Agricultural phenotyping operates overwhelmingly on monoculture plots. Forest species identification in mixed stands is substantively harder. Lee et al. (2023) provided the most direct comparison: on the same CNN architecture, single-species classification F1 reached 0.95, while labels containing two or more mixed species dropped to F1 = 0.75—a degradation of 21% [43]. Marinelli et al. (2022) evaluated 7-species mixed forest classification in the Italian Alps using ALS data: when trained on homogeneous conifer-only or broadleaf-only subsets, OA reached 82.54% and 86.64% respectively, but in the full 7-class mixed setting, broadleaf species such as Ostrya carpinifolia dropped to F1 = 64.52% [44]. A 2021 review of LiDAR-based tree species classification reported that effective point density directly controls identification capability: at 2–5 pts/m², OA ≈ 50%, while >50 pts/m² was needed for OA ≈ 70% [45]. In mixed forests, canopy overlap reduces effective point density per tree well below the nominal sensor specification.
 
-### 4.4 Integration Risks and Feasibility
+This barrier stresses **D2 (Encoder → Fusion)**: the spectral and structural signatures that are separable in monoculture become entangled in mixed canopies, demanding fusion strategies that can resolve sub-crown heterogeneity.
 
-The integration roadmap proposed above assumes that components from different research groups, implemented in different frameworks, can be composed into a single system. This subsection identifies the specific technical risks and assesses the feasibility of each integration step based on the publicly available code and documentation of each component.
+#### 4.2.3 LiDAR Biomass Saturation Above 300 Mg/ha
 
-**Table 6. Component Integration Feasibility Assessment.**
+Above-ground biomass (AGB) estimation from ALS exhibits a well-documented saturation ceiling. Tian et al. (2023), in their comprehensive review of forest AGB estimation, reported that ALS-derived metrics saturate at approximately 300–500 Mg/ha, after which additional biomass does not produce measurable changes in LiDAR height or density metrics [46]. The allometric chain—height → DBH (via species-specific H-D allometry, R² = 0.70–0.85) → stem volume (taper equations) → AGB (wood density × biomass expansion factor)—accumulates error at each step, with allometric equation mismatch contributing 10–30% relative RMSE [46]. At the global scale, GEDI L4A products achieve R² = 0.55–0.70 with rRMSE of 40–80% at footprint level [47].
 
-| Component | Open-Source | Framework | Key Integration Risk | Mitigation Strategy |
-|-----------|-------------|-----------|---------------------|---------------------|
-| **DUNIA** [9] | Yes | PyTorch | Encoder weights optimized for single-date median composites; adapting to multi-temporal input requires architectural modification to the encoder stem | Option B (freeze spatial backbone, attach Temporal Transformer with shared weights) avoids modifying DUNIA's pretrained weights directly |
-| **DCMNet** [7] | Yes | PyTorch | Routing gate consumes concatenated HSI+LiDAR features; injecting an external Agent embedding requires modifying the FC layer input dimension | FiLM-style conditioning (agent_context → affine transform on routing gate input) adds ≤1% parameter overhead with no retraining of backbone |
-| **MSFMamba** [6] | Yes | PyTorch + Mamba | Mamba SSM kernels require CUDA compilation; compatibility with DUNIA's encoder outputs (64-dim embeddings) not tested | DUNIA's 64-dim output dimension is compatible with MSFMamba's linear projection layer; CUDA kernels are pre-compiled in the official repository |
-| **FusDreamer** [25] | Yes | PyTorch + Diffusers | Diffusion model inference latency (16–67 s/sample) is prohibitive for real-time use; not suitable for large-area deployment | Use FusDreamer only for few-shot and prompt-guided scenarios; MSFMamba for production-scale deployment |
-| **PhenoAssistant** [4] | Partially (AutoGen-based) | AutoGen + GPT-4 API | Proprietary LLM API dependency; tool schema definition requires manual engineering for each new vision model; fine-grained visual reasoning remains a bottleneck (15% failure rate) | LangGraph SupervisorGraph provides equivalent orchestration with open-source LLM options; decomposing visual reasoning from orchestration limits LLM failures to strategy selection |
-| **TaxoNet** [10] | Not publicly available as of writing | PyTorch (assumed) | The dual-margin loss implementation is not open-source, requiring re-implementation from the paper description | The loss function is mathematically explicit in TaxoNet's paper (Proposition 2); re-implementation is straightforward with standard softmax + margin extensions |
+This barrier primarily stresses **D2 (Encoder → Fusion)** and **D3 (Quality → Fusion)**: fusion strategies that weight modalities equally cannot compensate for the fact that above ~300 Mg/ha, structural (LiDAR) information saturates while spectral (optical, SAR) information may still carry distinguishing signal.
 
-**Cross-component risks:**
+#### 4.2.4 Terrain Effects
 
-- **Training strategy conflict**: DUNIA's Zero-CL pretraining (ZCA whitening + contrastive loss) and DCMNet's supervised fusion training (CE loss) optimize for different objectives. Joining them in a single training loop may cause gradient interference. Recommendation: stage-wise training—pretrain DUNIA encoder, freeze, then train fusion module separately.
-- **API compatibility**: DUNIA (PyTorch 1.x/2.x), MSFMamba (requires Mamba CUDA kernels), LangGraph (Python ≥3.9), and AutoGen (GPT-4 API) have different dependency trees. Containerization (Docker) with pinned versions is essential for reproducibility.
-- **Data format mismatch**: DUNIA expects Sentinel-1/2 GeoTIFF patches at 10 m resolution in a specific band ordering; DCMNet expects .mat-format HSI cubes + LiDAR rasters; PureForest provides LAZ 1.4 + GeoTIFF. A unified data loader with standardized preprocessing (rasterio for GeoTIFF, laspy for LAZ, scipy for .mat) must be developed. This is engineering overhead, not a research risk.
-- **Attention mechanism mismatch**: DUNIA's dual-decoder produces separate OV (vertical) and OH (horizontal) embeddings. DCMNet's cross-modal attention expects a single feature map per modality. Selecting which decoder output to route to which fusion head is a design decision with no precedent in the literature. Recommendation: OV → LiDAR channel, OH → HSI channel in standard HSI-LiDAR fusion benchmarks.
+Forests in mountainous regions—which constitute a large fraction of global forest cover—introduce topographic distortion that is absent from flat agricultural benchmarks. You et al. (2020) demonstrated that tree species classification OA drops by 5–12% on slopes exceeding 30°, with north-vs-south aspect differences producing OA gaps of 8–15% due to anisotropic illumination [48]. Topographic shadows degrade species separability, and steep terrain (>40°) introduces LiDAR point cloud registration errors. The SCS+C topographic correction method represents the current best compromise, but residual radiometric distortion persists [48].
 
-**Overall assessment**: The integration is technically feasible with moderate engineering effort (estimated 2–4 person-months for Phase 1). Four of six components are fully open-source; the remaining two (PhenoAssistant's orchestration logic and TaxoNet's loss) are replicable from paper descriptions.
+This barrier stresses **D1 (Encoder ↔ Temporal)** and **D5 (Temporal ↔ Quality)**: terrain effects are seasonal (stronger in winter with low sun angle) and interact with phenological stage, yet no current encoder accounts for terrain-phenology coupling.
+
+#### 4.2.5 Cross-Site and Cross-Season Generalization
+
+The most systematically measured barrier is cross-site generalization degradation. Across multiple studies, F1 or OA drops of 20–40% are consistently reported when models are transferred to held-out geographic sites or seasons:
+
+| Study | Task | Degradation | Source |
+|-------|------|------------|--------|
+| Beloiu et al. (2023) | ITC detection + species ID, 3 sites | F1 0.72 → 0.45 (−37%) | [38] |
+| TreeSatAI (Ahlswede et al., 2023) | Multi-sensor species classification, 3 German states | OA 85% → 61% (−28%) | [49] |
+| TaxoNet (2025) | Fine-grained species classification, 5 climate zones | Top-1 91.2% → 67.8% (−23.4%) | [10] |
+| Kattenborn et al. (2022) | CNN spatial autocorrelation inflation | OA inflated 15–30% | [50] |
+| DeepForest community | Real-world vs. reported accuracy | Gap of 15–30 pp | [51] |
+
+Kattenborn et al. (2022) additionally demonstrated that spatial autocorrelation in standard random train/test splits inflates CNN accuracy by 15–30%, meaning that many published forest classification results likely overestimate true generalization capability [50]. Community feedback from DeepForest users confirms that real-forest deployment accuracy is 15–30 percentage points below reported benchmark figures [51].
+
+This barrier stresses all six dependencies simultaneously: encoders pretrained on one region may produce embeddings that are misaligned for another (D1, D2); quality signals have different distributions across sites (D3, D5); and agent reasoning chains that rely on region-specific ecological knowledge may not transfer (D4, D6).
+
+#### 4.2.6 Long-Tail Species Distributions
+
+Forest tree species exhibit extreme long-tail distributions that differ qualitatively from the moderate class imbalance in agricultural datasets. In PlantD, the top 3 species—oil palm (21%), loblolly pine (9%), and eucalyptus (12%)—account for 42% of all samples [14]. In PureForest, oak (Quercus spp.) and beech (Fagus sylvatica) dominate, while rare species such as chestnut (Castanea sativa) have orders of magnitude fewer samples [3]. This skew has a concrete consequence: standard OA reporting on PureForest (83.6% for LiDAR + elevation) obscures per-class F1 below 30% for rare species.
+
+The long-tail problem is well-studied in computer vision (TaxoNet, EKDC-Net, focal loss, LDAM), but these methods have been evaluated predominantly on single-modal RGB datasets (Auto-Arborist, iNaturalist). No method simultaneously addresses (a) multi-modal fusion, (b) long-tail rebalancing, and (c) pixel-level cross-modal alignment—all three of which are required for forest species classification with LiDAR + optical + SAR inputs.
+
+### 4.3 Why These Barriers Compound
+
+The six barriers are not independent. Multi-layer occlusion (4.2.1) reduces effective point density, which amplifies the mixed-species degradation (4.2.2) and accelerates LiDAR saturation (4.2.3). Terrain effects (4.2.4) worsen cross-site generalization (4.2.5) because topographic correction residuals are domain-specific. Long-tail distributions (4.2.6) interact with mixed-species classification: rare species are disproportionately found in mixed stands, meaning that the samples available for training on rare species are also the hardest to classify. No existing benchmark simultaneously probes occlusion, mixed-species composition, terrain variation, and long-tail distribution—which is the actual operating condition of natural forests.
 
 ---
 
-## 5. Evaluation and Benchmarks
+## 5. Evaluation: What a Forest-Specific Benchmark Would Require
 
-Current evaluation practice for forest AI systems is inadequate for assessing the integrated, quality-adaptive, agent-orchestrated system envisioned in this survey. We identify the specific deficiencies and propose a structured evaluation framework.
+Current evaluation practice for forest AI systems relies overwhelmingly on agricultural and urban benchmarks. This section does not propose an evaluation framework; rather, it identifies what a forest-specific evaluation *would need to measure*, given the transfer barriers documented in Section 4. The QUEST framework from medical AI evaluation [37] is used as a structuring device to enumerate the dimensions a forest benchmark would need to cover.
 
 ### 5.1 Current Evaluation Deficiencies
 
@@ -403,9 +374,9 @@ PhenoAssistant's evaluation [4], while rigorous within its scope, exemplifies fi
 4. **No cross-domain generalization testing**: All evaluation is within the training distribution's geographic and seasonal scope. TaxoNet's domain transfer experiments (AA-Central → AA-West/East, +3.5–4% recall gain with dual-margin vs. baseline) demonstrate that domain generalization capability varies substantially across methods and must be explicitly measured [10].
 5. **No decomposition of error sources**: When an agent produces an incorrect answer, it is unclear whether the error originated from (a) incorrect tool selection, (b) incorrect tool parameterization, (c) model prediction error, (d) reasoning logic error, or (e) knowledge base retrieval failure. Without decomposition, improvement efforts are undirected.
 
-### 5.2 QUEST-Forest Evaluation Framework
+### 5.2 QUEST-Forest as an Analytical Lens
 
-Adapting the QUEST framework from medical AI evaluation [37] to forest phenotyping yields five evaluation axes. Each axis maps to specific, automatically computable metrics.
+Adapting the QUEST framework from medical AI evaluation [37] to forest phenotyping produces the following five evaluation axes, each mapped to specific, automatically computable metrics. These are listed here to illustrate the design requirements a forest benchmark would impose, not as a finalized evaluation protocol.
 
 | Axis | Core Question | Primary Metrics |
 |------|--------------|-----------------|
@@ -465,11 +436,9 @@ For each tier, specific baseline methods with known performance characteristics 
 
 ---
 
-## 6. Remaining Gaps and Validation Roadmap
+## 6. Research Directions
 
-This section catalogs the specific gaps identified across the five design dimensions, the existing verified results most relevant to each gap, the hypothesis to be validated, and a proposed experimental design. The format follows the iron rule: every future claim is framed as "needs validation of whether X" rather than "will achieve X."
-
-### 6.1 Gap Summary Table
+The preceding sections have identified structural gaps in the AI phenotyping literature as it relates to forests. The five gap categories, summarized below, remain open:
 
 | Gap ID | Dimension | Description | Closest Existing Work | Severity |
 |--------|-----------|-------------|----------------------|----------|
@@ -479,62 +448,19 @@ This section catalogs the specific gaps identified across the five design dimens
 | G-4 | Long-Tail Cross-Modal | No method simultaneously addresses long-tail class balance and cross-modal pixel alignment | TaxoNet (long-tail, RGB-only); DUNIA (cross-modal, no long-tail handling) | High |
 | G-5 | Multi-Dataset Evaluation Protocol | No standardized benchmark for forest phenotyping AI agents | QUEST (medical, not forestry); PhenoAssistant (manual, 50 cases) | High |
 
-### 6.2 Validation Experiments
+Above these five technology-level gaps sits a more fundamental priority: **the construction of a forest-specific multi-modal benchmark**. No existing dataset simultaneously provides satellite time series, ALS point clouds, and ground-truth species labels at individual-tree resolution across multiple forest types, seasons, and terrain conditions (Section 2.3). PureForest provides ALS + VHR but no satellite temporal data; PlantD provides multi-year satellite time series but no LiDAR; NEON provides ALS + HSI + RGB across 81 US sites but lacks species-level labels for most sites. Until such a benchmark exists, the transfer barriers documented in Section 4.2 remain unmeasurable, and the gap between methodological progress (Sections 3.1–3.5) and forest applicability remains an article of reasoning rather than empirical demonstration.
 
-Each experiment is formulated as a falsifiable hypothesis with pre-registered success criteria. Unlike typical ablation studies that report post-hoc "best" configurations, these experiments specify the precise metric, threshold, and comparison baseline before execution.
-
-**V-1 (G-1): Temporal Enhancement of DUNIA Encoder**
-
-- **Existing results**: DUNIA zero-shot PASTIS OA 56.2% (single median composite); AnySat fine-tuned PASTIS OA 81.1% (multi-temporal input); DUNIA zero-shot tree height RMSE 2.0 m [9].
-- **Operationalization of "maintaining zero-shot capability"**: Zero-shot capability is considered maintained if (a) tree height RMSE with the temporally-enhanced encoder on the DUNIA test set does not exceed 2.2 m (≤10% degradation from baseline 2.0 m), and (b) canopy cover RMSE does not exceed 12.9% (≤10% degradation from baseline 11.7%). Both metrics are evaluated under the identical zero-shot KNN=50 protocol used by Fayad et al. [9].
-- **Hypothesis to validate**: Adding 3–6 bimonthly Sentinel-2 composites as input to a Temporal Transformer layer atop the DUNIA spatial encoder, with cross-temporal pixel consistency loss preserving Zero-CL alignment, will (a) achieve PASTIS OA ≥68.7% (≥50% closure of the 24.9 pp gap between DUNIA zero-shot at 56.2% and AnySat at 81.1%), and (b) maintain zero-shot tree height RMSE ≤2.2 m and canopy cover RMSE ≤12.9%.
-- **Proposed experiment**: (a) Extract 3 bimonthly Sentinel-2 composites (April/July/October) for each GEDI footprint in DUNIA's pretraining dataset. (b) Implement DOY positional encoding + 4-head temporal self-attention (2 layers, d_model=64 matching DUNIA's embedding dimension) on top of frozen DUNIA spatial encoder weights. (c) Jointly fine-tune with Zero-CL loss (unchanged across time steps) + cross-temporal pixel consistency loss L_consistency = MSE(e_t, e_{t+1}) × exp(−α·|DOY_t − DOY_{t+1}|). (d) Evaluate zero-shot tree height, canopy cover, and PASTIS OA. (e) Ablation: remove DOY PE, remove temporal self-attention (mean-pooling instead), remove cross-temporal loss.
-- **Success criterion**: PASTIS OA ≥68.7% AND tree height RMSE ≤2.2 m. Partial credit: PASTIS OA ≥65% with height RMSE ≤2.2 m indicates temporal gain with preserved structural accuracy.
-
-**V-2 (G-2): Quality-Adaptive Fusion Threshold Characterization**
-
-- **Existing results**: DCMNet Trento OA 98.96% (clean data) [7]; MSFMamba Houston2013 OA 92.86% (clean data) [6]; s2cloudless cloud detection F1 88–92%; ActionMAE modality dropout robustness verified in video domain [33].
-- **Hypothesis to validate**: There exists a cloud cover threshold θ_c ∈ [20%, 50%] such that switching from HSI-dominant (HSI weight 0.7, LiDAR 0.3) to LiDAR-dominant (LiDAR weight 0.7, HSI 0.3) fusion yields a statistically significant OA improvement (≥2 pp, p < 0.01 via McNemar's test on per-class predictions) on synthetically cloud-degraded Trento and Houston2013 data. Below θ_c, HSI-dominant fusion is expected to outperform; above θ_c, LiDAR-dominant fusion is expected to outperform, with a measurable crossover region.
-- **Proposed experiment**: (a) Apply synthetic cloud masks (circular, irregular, and stratus-like patterns, 0–80% coverage in 10% increments, 5 random seeds per level) to HSI patches in Trento (6 classes, 63×63 px) and Houston2013 (15 classes, 31×31 px). (b) Train MSFMamba with modality-specific quality scores as additional SSM parameter inputs: B/Δ parameters are generated by concatenating [HSI_features, LiDAR_features, quality_score] before the linear projection. (c) Deploy ActionMAE-style quality-adaptive dropout during training: drop_prob(HSI) = min(0.5, cloud_pct/100). (d) For each (dataset, cloud_level, seed) combination, measure OA under three strategies: equal-weight (0.5/0.5), HSI-dominant (0.7/0.3), LiDAR-dominant (0.3/0.7). (e) Determine θ_c as the lowest cloud level where LiDAR-dominant OA exceeds equal-weight OA by ≥2 pp with p < 0.01, and HSI-dominant OA falls below equal-weight OA by ≥2 pp.
-- **Success criterion**: Statistically significant threshold identified for at least one dataset; quality-adaptive strategy outperforms any fixed strategy across the full cloud cover range.
-
-**V-3 (G-3): Agent Strategy Selection vs. Expert Baseline**
-
-- **Existing results**: PhenoAssistant tool selection accuracy 100% (50/50) [4]; SAGE KB-guided diagnosis improvement 16.2 pp [11]; FusDreamer prompt-guided fusion achieves OA 96.36% on few-shot Trento [25].
-- **Hypothesis to validate**: An LLM agent (GPT-4o, temperature = 0.1, identical to PhenoAssistant's Manager configuration) receiving structured quality reports and task specifications can select fusion strategies with ≥85% exact-match agreement with expert-designed optimal strategies. Expert strategies are defined as the fusion method + weight configuration that achieves the highest OA for the given quality profile as characterized by V-2's threshold curve. The agent's decision space consists of: fusion method ∈ {MSFMamba, DCMNet, FusDreamer}, modality weights ∈ {equal, HSI-dominant, LiDAR-dominant}, and temporal context ∈ {single-date, multi-temporal}.
-- **Proposed experiment**: (a) Generate 100 test scenarios by sampling from a Cartesian product of {cloud cover (0%, 20%, 40%, 60%, 80%), LiDAR density (1, 5, 20, 40 pts/m²), task type (species classification, height estimation, phenology stage)}—each scenario is a JSON object with numeric quality values and a natural language task description. (b) For each scenario, determine the expert-optimal strategy using the V-2 threshold curve (for cloud-dependent scenarios), expert judgment (for multi-dimensional scenarios where thresholds are not yet characterized), and domain knowledge (for temporal decisions). (c) Provide the same JSON quality reports + task descriptions to GPT-4o with a strategy selection prompt listing available methods and their documented characteristics (from Tables 2 and 3). (d) Measure exact-match agreement rate and Kendall rank correlation between agent and expert. (e) For disagreement cases, execute both strategies on synthetic test data and compare actual OA; report whether the agent's or expert's strategy yielded higher accuracy.
-- **Success criterion**: Agreement rate ≥85%; in disagreement cases, agent-selected strategy OA within 2 pp of expert-selected strategy in ≥80% of cases. Secondary: Kendall τ ≥ 0.7 on strategy rankings.
-- **Success criterion**: Agreement rate ≥85%; in disagreement cases, agent-selected strategy OA within 2 pp of expert-selected strategy.
-
-**V-4 (G-4): Dual-Margin Constraint in Cross-Modal Embedding Space**
-
-- **Existing results**: TaxoNet dual-margin loss +5.1 pp macro-recall on Auto-Arborist [10]; DUNIA OH embedding space produces species wF1 76.0% (zero-shot) and 82.2% (fine-tuned) on PureForest [9]; TaxoNet tail-class recall 57.1% (AA-Central) with 92.4% head-class recall [10].
-- **Hypothesis to validate**: Adding a TaxoNet-style dual-margin classification head to DUNIA's OH 64-dim embedding space will improve PureForest tail-class recall by ≥5 pp over the CE baseline (current tail recall not separately reported in [9], but the head-tail gap is a known issue across all fusion methods). Taxonomic-distance-gated margins (larger margin for same-genus confusions, e.g., Quercus robur vs. Quercus petraea) will yield ≥2 pp additional tail-class recall gain compared to uniform margins, without reducing head-class recall by more than 2 pp from the CE baseline.
-- **Proposed experiment**: (a) Implement dual-margin softmax classification head (input: DUNIA OH 64-dim frozen embeddings, output: 13 PureForest classes). (b) Define taxonomic distance matrix T_ij ∈ [0,1] from standard plant taxonomy (genus=1.0, family=0.7, order=0.4, class=0.1), and set per-class margin m_i = m_base + λ × max_j (1 − T_ij) with λ ∈ {0.0, 0.5, 1.0, 2.0}. (c) Train 4 margin configurations + CE baseline + LDAM baseline, each with 3 random seeds, on PureForest's standard 70/15/15 train/val/test split stratified by frequency bin. (d) Report: per-class F1 (sorted by training frequency), macro-F1, Tail-Recall@20 (4 rarest of 13 classes), Head-Tail Gap, and confusion matrix confusion patterns (within-genus vs. cross-genus confusions). (e) Statistical test: one-sided paired t-test (n=3 seeds) for tail-class recall improvement over CE baseline.
-- **Success criterion**: Tail-Recall@20 improvement ≥5 pp over CE baseline (p < 0.05); head-class recall degradation ≤2 pp. Taxonomic-distance-gated margins provide ≥2 pp additional tail gain over uniform margins at the optimal λ.
-- **Success criterion**: Tail-class recall improvement ≥5 pp; head-class recall degradation ≤2 pp.
-
-**V-5 (G-5): ForestPheno-Bench Construction**
-
-- **Existing results**: PhenoAssistant manual evaluation 50 cases [4]; QUEST framework for medical LLM evaluation with five dimensions [37]; PureForest, PlantD, Houston2013, Trento as candidate data sources.
-- **Hypothesis to validate**: An automated, tiered evaluation benchmark with ≥200 test cases spanning closed-set, open-set, and cross-domain scenarios can reliably distinguish (p < 0.05) the performance profiles of three distinct agent + fusion configurations with Cohen's d ≥ 0.5 (medium effect size) on at least 4 of the 6 QUEST-Forest metrics at ≥80% statistical power (α = 0.05, two-tailed).
-- **Proposed experiment**: Construct test dataset with exact case counts: 80 closed-set species classification cases (frequency-stratified: 30 head, 30 medium, 20 tail, drawn from PureForest 13 classes), 40 open-set cases (20 PureForest species + 20 held-out PlantD species not in PureForest's class set), 40 cross-domain cases (20 different season, 20 different geographic region, from PureForest's held-out polygons and PlantD's multi-country test split), 40 composite reasoning T2 cases (20 multi-step tool chaining, 20 temporal comparison), 20 agentic decision T3 cases (simulated quality scenarios with pre-defined expert action as ground truth). Total: 220 test cases. Run 3 configurations through the benchmark: (C1) DUNIA encoder + static equal-weight fusion + no agent, (C2) DUNIA + DCMNet dynamic routing + rule-based quality adaptation, (C3) DUNIA + MSFMamba + GPT-4o agent quality-aware strategy selection. Compute Cohen's d for each QUEST-Forest metric between each configuration pair. Determine minimum detectable effect size at 80% power given the achieved variance.
-- **Success criterion**: At least 4/6 metrics show significant differences (p < 0.05, Cohen's d ≥ 0.5) between at least two configurations. The benchmark's inter-rater reliability (test-retest on same configuration, two runs with different random seeds) achieves ICC ≥ 0.85. All test cases, evaluation code, and baseline configurations are publicly released.
-- **Success criterion**: Benchmark reliably distinguishes configurations with ≥5 pp OA difference at p < 0.05.
+Future system designs—whether termed ForestPheno or otherwise—will depend on advances in closing this benchmark gap and on the five research directions above. The methods exist; the validation in forest settings does not.
 
 ---
 
 ## 7. Conclusion
 
-This survey has traced four technological rivers—foundation models, dynamic multimodal fusion, pixel-level contrastive representation learning, and LLM-based agent orchestration—from their origins through their 2023–2026 evolution to their current state in May 2026. Each river has delivered mature, empirically verified components: DUNIA's pixel-level cross-modal embeddings yield zero-shot tree height RMSE 2.0 m; DCMNet's dynamic routing achieves Trento OA 98.96%; PhenoAssistant's agent orchestration selects vision tools with 100% accuracy; MSFMamba's O(n) Mamba backbone processes large-area remote sensing data at 0.175 s per sample. Yet these components remain isolated: no existing system simultaneously achieves pixel-level cross-modal representation, data-quality-adaptive dynamic fusion, temporal phenology awareness, long-tail species balance, and agent-based orchestration.
+Between 2023 and 2026, AI-based remote sensing phenotyping has progressed from static patch-level classification to agent-orchestrated multimodal systems capable of pixel-level cross-modal alignment, data-driven dynamic fusion, and training-free knowledge-grounded reasoning. The quantitative evidence is compelling: DUNIA achieves zero-shot tree height RMSE of 2.0 m, DCMNet reaches Trento OA of 98.96%, PhenoAssistant selects vision tools with 100% accuracy, and IFGNet pushes Houston2013 OA to 99.37%. Individually, each component has reached a level of maturity that would justify integration into operational pipelines.
 
-The contribution of this survey is not a new model but a design-space analysis framework that makes the integration problem tractable. By decomposing a forest phenotyping system into five orthogonal dimensions, enumerating the verified candidate choices for each, and identifying the cross-dimensional dependencies that preclude independent optimization, we provide a structured roadmap for assembling the isolated components into a coherent system. The selection rationales are quantitative rather than qualitative—every architectural recommendation is supported by specific numbers from original papers—and the identified gaps are formulated as falsifiable validation hypotheses with proposed experimental designs.
+However, all of these results come from agricultural and urban benchmarks. The six physical barriers documented in Section 4.2—multi-layer canopy occlusion, mixed-species degradation, LiDAR biomass saturation, terrain effects, cross-site generalization collapse, and long-tail species distributions—have not been experimentally characterized for any of the methods reviewed. The gap between what these methods can demonstrably do (classify crops in flat fields) and what forests demand (detect suppressed trees under overlapping canopies on 30° slopes in mixed-species stands with fewer than 10 training samples per rare class) is acknowledged in the forestry literature (Section 4.2) but absent from the AI phenotyping literature (Sections 3.1–3.5).
 
-The four rivers are approaching confluence. The foundational models continue to supply pretrained representations; the fusion methods have evolved from static to dynamic to function-based; the contrastive learning methods have pushed granularity from patches to pixels; and the agent frameworks have demonstrated that LLMs can orchestrate scientific workflows with high reliability. What remains is the "welding"—connecting the quality sensor to the fusion router through the agent's orchestration layer, extending the pixel-level embeddings into the temporal dimension, and constraining the embedding space with ecological knowledge of long-tail species distributions.
-
-The validation roadmap (Section 6) specifies five concrete experiments that, if successful, would collectively demonstrate that the integrated system can: (1) recover temporal phenological signals while preserving cross-modal alignment precision; (2) adapt fusion strategy to data quality levels with statistically significant benefit over static fusion; (3) achieve high agent-to-expert strategy selection agreement; (4) improve rare species classification without sacrificing common species accuracy; and (5) be evaluated on a standardized, automated benchmark with known statistical power. Each experiment is designed to be executable with existing public datasets (PureForest, PlantD, Houston2013, Trento), open-source codebases (DUNIA, DCMNet, MSFMamba), and accessible compute resources (single A6000/A100 GPU).
-
-The window of opportunity is defined by the state of the four rivers in mid-2026: each has produced components mature enough for integration, yet the integrated system does not exist. The design-space analysis presented here provides the blueprint.
+The immediate priority is not integration engineering but empirical characterization. A forest-specific multi-modal benchmark—combining satellite time series, ALS point clouds, and ground-truth species labels at ITC resolution across multiple forest types and terrain conditions—would enable the first rigorous measurement of the forest transfer gap. Until such data exist, the claim that any method "works for forests" remains untestable. The methods are ready; the forest validation is the blank that defines the next phase of work.
 
 ---
 
@@ -607,5 +533,33 @@ The window of opportunity is defined by the state of the four rivers in mid-2026
 [36] "Predictive Dynamic Fusion," *arXiv:2406.04802*, 2024.
 
 [37] Y. Wang et al., "QUEST: A Framework for Human Evaluation of Large Language Models in Healthcare," *npj Digital Medicine*, 2024.
+
+[38] M. Beloiu, L. Heinzmann, N. Rehush, A. Geßler, and V. C. Griess, "Individual Tree-Crown Detection and Species Identification in Heterogeneous Forests Using Aerial RGB Imagery and Deep Learning," *Remote Sensing*, vol. 15, no. 5, 1463, 2023. DOI: 10.3390/rs15051463.
+
+[39] A. Silwal et al., "Exploring the Limits of Species Identification via a Convolutional Neural Network in a Complex Forest Scene through Simulated Imaging Spectroscopy," *Remote Sensing*, vol. 16, no. 3, 498, 2024. DOI: 10.3390/rs16030498.
+
+[40] P. Sivanandam et al., "Tree Detection and Species Classification in a Mixed Species Forest Using Unoccupied Aircraft System (UAS) RGB and Multispectral Imagery," *Remote Sensing*, vol. 14, no. 19, 4963, 2022. DOI: 10.3390/rs14194963.
+
+[41] Multiple authors, "SegmentAnyTree: A Sensor and Platform Agnostic Deep Learning Model for Tree Segmentation Using Laser Scanning Data," *Remote Sensing of Environment*, 2024. DOI: 10.1016/j.rse.2024.114367.
+
+[42] H. Zhao, J. Morgenroth, G. D. Pearse, and J. Schindler, "A Systematic Review of Individual Tree Crown Detection and Delineation with Convolutional Neural Networks (CNN)," *Current Forestry Reports*, 2023. DOI: 10.1007/s40725-023-00184-3.
+
+[43] S. Lee et al., "Mapping Tree Species Using CNN from Bi-Seasonal High-Resolution Drone Optic and LiDAR Data," *Remote Sensing*, vol. 15, no. 8, 2140, 2023. DOI: 10.3390/rs15082140.
+
+[44] D. Marinelli et al., "An Approach Based on Deep Learning for Tree Species Classification in LiDAR Data Acquired in Mixed Forest," *IEEE Geoscience and Remote Sensing Letters*, 2022. DOI: 10.1109/LGRS.2022.3181680.
+
+[45] R. Neuville et al., "A Review of Tree Species Classification Based on Airborne LiDAR Data and Applied Classifiers," *Remote Sensing*, vol. 13, no. 3, 353, 2021. DOI: 10.3390/rs13030353.
+
+[46] L. Tian, X. Wu, T. Yu, and M. Li, "Review of Remote Sensing-Based Methods for Forest Aboveground Biomass Estimation: Progress, Challenges, and Prospects," *Forests*, vol. 14, no. 6, 1086, 2023. DOI: 10.3390/f14061086.
+
+[47] R. Dubayah et al., "GEDI launches a new era of biomass inference from space," *Environmental Research Letters*, vol. 17, 095001, 2022.
+
+[48] H. You et al., "The Effect of Topographic Correction on Forest Tree Species Classification Accuracy," *Remote Sensing*, vol. 12, no. 5, 787, 2020. DOI: 10.3390/rs12050787.
+
+[49] S. Ahlswede et al., "TreeSatAI Benchmark Archive: a multi-sensor, multi-label dataset for tree species classification in remote sensing," *Earth System Science Data*, vol. 15, pp. 681–695, 2023. DOI: 10.5194/essd-15-681-2023.
+
+[50] T. Kattenborn et al., "Spatially autocorrelated training and validation samples inflate performance assessment of convolutional neural networks," *ISPRS Open Journal of Photogrammetry and Remote Sensing*, 100018, 2022. DOI: 10.1016/j.ophoto.2022.100018.
+
+[51] DeepForest GitHub Repository, Weecology Lab. https://github.com/weecology/DeepForest (community-reported deployment accuracy gap).
 
 
