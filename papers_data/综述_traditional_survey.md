@@ -1,4 +1,4 @@
-# Deep Learning for Vegetation Phenotyping with Remote Sensing: A Systematic Survey of Methods and Data (2023–2026)
+# Deep Learning for Forest Phenotyping with Remote Sensing: A Systematic Survey of Methods and Data (2023–2026)
 
 ## Abstract
 
