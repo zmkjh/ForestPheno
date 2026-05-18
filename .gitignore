@@ -16,3 +16,10 @@ papers_data/pdfs_downloaded/09_MDPI_Manual/
 
 # Environment
 .env
+# Agent temp files
+*_f*.json
+*_k*.json
+*_q*.json
+*_s*.json
+*_t*.json
+*_robustness*.json
