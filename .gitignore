@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+~/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Tool output
+*.log
+
+# Large PDFs are tracked but MDPI manual downloads are ignored
+papers_data/pdfs_downloaded/09_MDPI_Manual/
+
+# Environment
+.env
