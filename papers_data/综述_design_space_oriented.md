@@ -14,7 +14,7 @@ Remote sensing has partially closed this gap. Satellite constellations (Sentinel
 
 A pivotal development arrived in April 2026 when Chen et al. published PhenoAssistant in *Nature Communications*, demonstrating that a large language model (LLM)-based multi-agent system could orchestrate computer vision tools, statistical analyses, and natural language explanations for plant phenotyping tasks with 100% tool selection accuracy [4]. PhenoAssistant marks the entry of agent-based orchestration into plant sciences, but its architecture reveals a structural limitation that defines the opportunity space for this survey: it orchestrates *which tool* processes *which sub-task*, but does not dynamically adjust *how* multimodal data are fused based on input quality or scene context. The fusion strategies of the underlying vision models remain static, predetermined at design time.
 
-This limitation is symptomatic of a broader fragmentation. If one surveys the literature from 2023 to 2026, one observes what the Timeline Analysis in prior work termed "four rivers flowing in parallel" [5]:
+This limitation is symptomatic of a broader fragmentation. If one surveys the literature from 2023 to 2026, one observes what the Timeline Analysis in prior work termed "four rivers flowing in parallel":
 
 - **River A (Foundation Models)**: CLIP (2021), MAE (2022), SAM (2023), and DINOv2 (2023) have continuously delivered pretraining paradigms—contrastive cross-modal alignment, masked reconstruction, and self-supervised visual features—that downstream remote sensing models increasingly rely upon for weight initialization and few-shot transfer.
 - **River B (RS Multimodal Fusion)**: From MSFMamba's static selective state-space fusion (Houston2013 OA 92.86%, 2024) [6] through DCMNet's data-driven dynamic routing (Houston2013 OA 95.11%, Trento OA 98.96%, 2025) [7] to IFGNet's Kolmogorov-Arnold Network (KAN)-based implicit frequency aggregation (Houston2013 OA 99.37%, 2026) [8], fusion strategies have evolved from designer-specified to data-dependent, and recently toward functionalized.
@@ -35,7 +35,7 @@ This survey addresses this gap through a design-space analysis. Rather than prop
 
 ### 2.1 Core Tasks
 
-Forest phenotyping encompasses three families of tasks [13]: (i) **species identification**—assigning taxonomic labels at the species or genus level to individual trees or homogeneous forest patches; (ii) **structural parameter extraction**—estimating height, crown diameter, diameter at breast height (DBH), canopy cover fraction, and plant area index (PAI); and (iii) **phenological monitoring**—tracking seasonal transitions (budburst, leaf expansion, peak greenness, senescence, leaf fall) and detecting anomalies induced by drought, pest outbreaks, or pathogen invasion.
+Forest phenotyping encompasses three families of tasks: (i) **species identification**—assigning taxonomic labels at the species or genus level to individual trees or homogeneous forest patches; (ii) **structural parameter extraction**—estimating height, crown diameter, diameter at breast height (DBH), canopy cover fraction, and plant area index (PAI); and (iii) **phenological monitoring**—tracking seasonal transitions (budburst, leaf expansion, peak greenness, senescence, leaf fall) and detecting anomalies induced by drought, pest outbreaks, or pathogen invasion.
 
 Species identification in natural forests is particularly challenging. PureForest, the largest ALS-based tree species dataset, covers 18 species across 339 km² in southern France [3]. PlantD (Planted) spans 64 species/ genera at global scale but lacks LiDAR coverage [14]. Both exhibit severe class imbalance: in PureForest, oak (Quercus spp.) and beech (Fagus sylvatica) dominate, while rare species such as chestnut (Castanea sativa) have orders of magnitude fewer samples. In PlantD, oil palm (21%), loblolly pine (9%), and eucalyptus (12%) together account for 42% of samples.
 
@@ -252,7 +252,7 @@ The individual building blocks for data quality assessment are production-ready:
 - **HSI noise estimation**: HSI-SDeCNN (2022) outputs simultaneous destriping and noise estimation; HyMiNoR estimates mixed Gaussian + striping + impulse noise.
 - **Uncertainty quantification**: UnCRtainTS (2023, CVPR Workshop, 69 citations) produces per-pixel uncertainty maps for cloud removal in optical satellite time series—these uncertainty maps can serve directly as quality inputs to an agent module [31].
 
-The key finding from the design space survey is blunt: **no existing paper has built an end-to-end system that connects data quality assessment to adaptive fusion strategy selection** [32]. This is an identified literature gap, not a component-availability gap. The three pieces—quality assessment, dynamic fusion, and agent orchestration—each have mature technical foundations, but the connectors between them have not been built.
+The key finding from the design space survey is blunt: **no existing paper has built an end-to-end system that connects data quality assessment to adaptive fusion strategy selection**. This is an identified literature gap, not a component-availability gap. The three pieces—quality assessment, dynamic fusion, and agent orchestration—each have mature technical foundations, but the connectors between them have not been built.
 
 #### 3.5.2 What Exists: Missing Modality and Quality-Adaptive Training
 
@@ -469,8 +469,6 @@ The window of opportunity is defined by the state of the four rivers in mid-2026
 
 [4] F. Chen et al., "A conversational multi-agent AI system for automated plant phenotyping," *Nature Communications*, 2026. DOI: 10.1038/s41467-026-71090-y.
 
-[5] "Timeline Analysis: From Static Classification to Intelligent Orchestration — Four-Year Technology Evolution of Forest Remote Sensing Intelligence (2023–2026)," in *ForestPheno Design Space Survey Series*, No. 00, 2026.
-
 [6] Y. Gao et al., "MSFMamba: Multi-Scale Fusion Mamba for Multimodal Remote Sensing Classification," *IEEE Transactions on Geoscience and Remote Sensing*, 2024.
 
 [7] J. Lin et al., "DCMNet: Dynamic Collaborative Multimodal Network for HSI-LiDAR Classification," *IEEE Transactions on Geoscience and Remote Sensing*, 2025.
@@ -484,8 +482,6 @@ The window of opportunity is defined by the state of the four rivers in mid-2026
 [11] M. A. Arshad et al., "SAGE: Scalable Agentic Grounded Evaluation for Crop Disease Diagnosis," *arXiv:2605.09768*, 2026.
 
 [12] X. Chen et al., "LEMON: Learning Executable Multi-Agent Orchestration via Counterfactual Reinforcement Learning," *arXiv:2605.14483*, 2026.
-
-[13] "Deep Learning for Forest Resource Monitoring: A Comprehensive Survey," in *ForestPheno Design Space Survey Series*, No. 05, 2026.
 
 [14] J. Brandt et al., "PlantD: A Global Dataset for Planted Forest Species Identification from Multi-Source Satellite Time Series," *arXiv:2409.xxxxx*, 2024.
 
@@ -523,8 +519,6 @@ The window of opportunity is defined by the state of the four rivers in mid-2026
 
 [31] P. Ebel et al., "UnCRtainTS: Uncertainty Quantification for Cloud Removal in Optical Satellite Time Series," in *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)*, 2023. DOI: 10.1109/cvprw59228.2023.00202.
 
-[32] "Data Quality Awareness and Adaptive Mechanisms in Remote Sensing Multimodal Fusion," in *ForestPheno Design Space Survey Series*, No. 10, 2026.
-
 [33] S. Woo et al., "ActionMAE: Towards Good Practices for Missing Modality Robust Action Recognition," in *Proceedings of the AAAI Conference on Artificial Intelligence (Oral)*, 2023. arXiv:2211.13916.
 
 [34] Z. Liu et al., "M3L: Missing Modality Robustness in Semi-Supervised Multi-Modal Semantic Segmentation," *arXiv:2304.10756*, 2023.
@@ -535,21 +529,4 @@ The window of opportunity is defined by the state of the four rivers in mid-2026
 
 [37] Y. Wang et al., "QUEST: A Framework for Human Evaluation of Large Language Models in Healthcare," *npj Digital Medicine*, 2024.
 
-[38] "ForestPheno Encoder Design Space," in *ForestPheno Design Space Survey Series*, No. 06, 2026.
-
-[39] "Remote Sensing Multimodal Dynamic Fusion Design Space: Agent-Controllable Fusion Strategy Blueprint," in *ForestPheno Design Space Survey Series*, No. 07, 2026.
-
-[40] "Agent Framework Design Space Survey for ForestPheno Multimodal Forest Phenotyping Multi-Agent System," in *ForestPheno Design Space Survey Series*, No. 08, 2026.
-
-[41] "ForestPheno Temporal Phenology Modeling Design," in *ForestPheno Design Space Survey Series*, No. 09, 2026.
-
-[42] "Long-Tail Recognition, Open-Set Detection, and Evaluation Protocol Design for Forest/Plant AI Systems," in *ForestPheno Design Space Survey Series*, No. 11, 2026.
-
-[43] "Cross-Modal Contrastive Learning for Earth Observation: DUNIA and TaxoNet Method Comparison," in *ForestPheno Design Space Survey Series*, No. 02, 2026.
-
-[44] "Dynamic Multimodal Fusion for Remote Sensing: A Comprehensive Survey," in *ForestPheno Design Space Survey Series*, No. 03, 2026.
-
-[45] "Forest/Tree Phenotyping Datasets: Existing Resources Survey and ForestPheno Implications," in *ForestPheno Design Space Survey Series*, No. 04, 2026.
-
-[46] "LLM-based AI Agent Orchestration for Plant/Forest Phenotyping," in *ForestPheno Design Space Survey Series*, No. 01, 2026.
 
