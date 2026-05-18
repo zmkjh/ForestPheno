@@ -18,7 +18,7 @@ This limitation is symptomatic of a broader fragmentation. If one surveys the li
 
 - **River A (Foundation Models)**: CLIP (2021), MAE (2022), SAM (2023), and DINOv2 (2023) have continuously delivered pretraining paradigms—contrastive cross-modal alignment, masked reconstruction, and self-supervised visual features—that downstream remote sensing models increasingly rely upon for weight initialization and few-shot transfer.
 - **River B (RS Multimodal Fusion)**: From MSFMamba's static selective state-space fusion (Houston2013 OA 92.86%, 2024) [6] through DCMNet's data-driven dynamic routing (Houston2013 OA 95.11%, Trento OA 98.96%, 2025) [7] to IFGNet's Kolmogorov-Arnold Network (KAN)-based implicit frequency aggregation (Houston2013 OA 99.37%, 2026) [8], fusion strategies have evolved from designer-specified to data-dependent, and recently toward functionalized.
-- **River C (Contrastive Representation Learning)**: DUNIA's pixel-level cross-modal contrastive framework [9] achieved zero-shot tree height estimation with RMSE 2.0 m (r = 0.93), surpassing the supervised SOTA of 5.2 m [9]. TaxoNet's dual-margin contrastive loss addressed long-tail plant classification, yielding a +6% macro-recall gain on Google Auto-Arborist [10].
+- **River C (Contrastive Representation Learning)**: DUNIA's pixel-level cross-modal contrastive framework [9] achieved zero-shot tree height estimation with RMSE 2.0 m (r = 0.93), surpassing the supervised SOTA of 5.2 m [9]. TaxoNet's dual-margin contrastive loss addressed long-tail plant classification, yielding a +5.1 pp macro-recall gain on Google Auto-Arborist [10].
 - **River D (Agent Orchestration)**: PhenoAssistant (2026) demonstrated LLM-orchestrated multi-agent tool chaining [4]; SAGE (2026) proved that training-free, source-grounded knowledge-base reasoning improves crop disease diagnosis by an average of 16.2 percentage points [11]; LEMON (2026) introduced counterfactual reinforcement learning for optimal multi-agent orchestration specification [12].
 
 Each river has produced state-of-the-art components, yet none addresses all five requirements simultaneously: (a) pixel-level cross-modal representation, (b) data-quality-adaptive dynamic fusion, (c) temporal phenology awareness, (d) long-tail species balance, and (e) agent-based orchestration. The components are individually mature but architecturally isolated.
@@ -91,7 +91,7 @@ Seven encoder paradigms have been evaluated under unified experimental settings 
 | Granularity | Pixel-level (10 m) | Patch-level | Patch-level (8×8) | Patch-level (8×8) | Patch-level | Patch-level | Patch-level |
 | Fine-tuned Height (RMSE) | **1.3 m** (r=0.95) | 2.8 m (r=0.89) | 3.5 m (r=0.78) | 10.5 m (r=0.52) | 11.0 m (r=0.51) | — | 11.0 m (r=0.55) |
 | Fine-tuned Species (wF1, PF) | 82.2 | **82.3** | 80.5 | 78.8 | 79.8 | — | 78.9 |
-| 20% Labels Height (RMSE) | **2.1 m** (r=0.92) | 2.8 m (r=0.89) | 3.6 m (r=0.76) | 10.5 m (r=0.52) | 11.2 m (r=0.50) | — | 11.1 m (r=0.52) |
+| 20% Labels Height (RMSE) | **1.4 m** (r=0.93) | 2.8 m (r=0.89) | 3.6 m (r=0.76) | 10.5 m (r=0.52) | 11.2 m (r=0.50) | — | 11.1 m (r=0.52) |
 | Temporal Support | Single median composite | Native multi-temporal | Static | Temporal masking | Static | Multi-scale spatial | Static |
 | Inference (20 km²) | **4.22 s** | 177 s | — | — | — | — | — |
 | Open-source | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
@@ -104,7 +104,7 @@ DUNIA's zero-shot performance is particularly relevant for forest scenarios with
 
 - **Pixel-level granularity (P0 requirement)**: DUNIA is the only method in the comparison achieving pixel-level cross-modal embeddings (64-dim output projection, 10 m/pixel). AnySat, CROMA, SatMAE, and DOFA all output patch-level embeddings, which are insufficient for ITC-level parameter mapping. The individual tree crown—typically spanning 3–30 m²—requires pixel-level spatial precision.
 - **Cross-modal fusion (P0 requirement)**: DUNIA's Zero-CL loss achieves cross-modal alignment between Sentinel-1/2 pixels and GEDI waveforms with positive-pair cosine similarity of 0.86, compared to 0.56 for VICReg under identical batch conditions (average ~26 waveforms per batch) [9]. The ZCA whitening step that enables this was an architectural innovation specifically motivated by the sparsity of waveform samples per batch.
-- **Zero/few-shot capability (P0 requirement)**: DUNIA's zero-shot tree height (RMSE 2.0 m) already surpasses the fully supervised FORMS baseline (5.2 m). At 20% label fraction, vertical structure performance is near-lossless (RMSE 2.0 m → 2.1 m). This label efficiency is critical for forest applications where ground measurements are expensive and sparse.
+- **Zero/few-shot capability (P0 requirement)**: DUNIA's zero-shot tree height (RMSE 2.0 m) already surpasses the fully supervised FORMS baseline (5.2 m). At 20% label fraction, vertical structure performance is near-lossless (RMSE 1.4 m vs. 1.3 m at full labels, a negligible 0.1 m degradation). This label efficiency is critical for forest applications where ground measurements are expensive and sparse.
 - **Computational efficiency**: DUNIA trains on a single A6000 48GB GPU. Inference on a 20.48 × 20.48 km area (4.2M pixels) completes in 4.22 s, compared to AnySat's 177 s (~40× slower). This single-GPU feasibility enables region-specific retraining, which is essential given the known domain sensitivity of pretrained forest models.
 
 **Why not AnySat?** AnySat achieves the best classification performance (PureForest wF1 82.3, PASTIS wF1 81.1) and has native multi-temporal support. However, its patch-level output cannot perform pixel-level tree crown parameter mapping. Its vertical structure estimation is significantly weaker (height RMSE 2.8 m vs. DUNIA 1.3 m, a 1.5 m gap), and inference is 40× slower, making it impractical for large-area forest monitoring. AnySat's strategic value is as a *complement* to DUNIA: its temporal patch embeddings can supply the phenological signal that DUNIA currently lacks.
@@ -170,9 +170,9 @@ The agent orchestrator accepts a user's natural language description of a phenot
 
 Three agent paradigms have been demonstrated in the plant/foresetting domain, with quantitative evaluation results available for two:
 
-**PhenoAssistant (2026)** [4] employs a centralized multi-agent architecture: a Manager Agent (GPT-4o, temperature = 0.1) receives natural language instructions, generates a step-wise plan, and dispatches tasks to a toolkit comprising vision model zoo (Mask2Former, Leaf-only SAM, DINOv2-base with LoRA fine-tuning), phenotyping extraction tools, code writer, data visualizer, plot analyzer (Pandas AI-based), table analyzer, RAG agent, and deterministic statistical modules (ANOVA, Tukey-Kramer post-hoc). Tools are exposed via structured schemas (name, description, parameters, I/O format) built on the AutoGen framework. Evaluation on 50 manually designed tasks yielded: tool chain rationality 4.25/5 (4.35/5 with Critic Agent), tool existence 5.00/5, tool appropriateness 4.65/5 (4.90/5 with Critic), argument correctness 4.30/5 (4.40/5 with Critic). Vision model type recommendation achieved 100% accuracy (50/50 tasks); vision model exact match achieved 100% accuracy (20/20 tasks). Data analysis tasks achieved 85% accuracy (17/20); all three failures were attributed to fine-grained visual reasoning by the Plot Analyser—the LLM misinterpreted chart elements, indicating that LLM-based visual reasoning remains the primary bottleneck [4].
+**PhenoAssistant (2026)** [4] employs a centralized multi-agent architecture: a Manager Agent (GPT-4o, temperature = 0.1) receives natural language instructions, generates a step-wise plan, and dispatches tasks to a toolkit comprising vision model zoo (Mask2Former, Leaf-only SAM, DINOv2-base with LoRA fine-tuning), phenotyping extraction tools, code writer, data visualizer, plot analyzer (Pandas AI-based), table analyzer, RAG agent, and deterministic statistical modules (ANOVA, Tukey-Kramer post-hoc). Tools are exposed via structured schemas (name, description, parameters, I/O format) built on the AutoGen framework. Evaluation on 20 manually designed tasks yielded: tool chain rationality 4.25/5 (4.35/5 with Critic Agent), tool existence 5.00/5, tool appropriateness 4.65/5 (4.90/5 with Critic), argument correctness 4.30/5 (4.40/5 with Critic). Vision model type recommendation achieved 100% accuracy (50/50 tasks); vision model exact match achieved 100% accuracy (20/20 tasks). Data analysis tasks achieved 85% accuracy (17/20); all three failures were attributed to fine-grained visual reasoning by the Plot Analyser—the LLM misinterpreted chart elements, indicating that LLM-based visual reasoning remains the primary bottleneck [4].
 
-**SAGE (2026)** [11] employs a training-free agentic reasoning pipeline for crop disease diagnosis: organ identification → anatomy-indexed filtering (retaining only diseases affecting detected plant parts) → source-grounded knowledge base (KB) symptom matching → sequential reference image comparison with limited budget k → prediction with full reasoning trace. The source-grounded KB contains structured symptom facts extracted from web sources by LLM, with original citations, and audited by domain experts. Introducing the KB improved diagnostic accuracy by an average of 16.2 percentage points at k=8 (soybean: 31.1% → 62.2%, maize: 42.0% → 61.4%, tomato: 57.5% → 72.6%, mango: 82.5% → 97.5%). The agentic pipeline outperformed few-shot classification by 8.1 percentage points on average under equal reference budget. Failure modes were concentrated in cases where visual ambiguity overrode KB evidence (e.g., anthracnose vs. charcoal rot in stem diseases) [11].
+**SAGE (2026)** [11] employs a training-free agentic reasoning pipeline for crop disease diagnosis: organ identification → anatomy-indexed filtering (retaining only diseases affecting detected plant parts) → source-grounded knowledge base (KB) symptom matching → sequential reference image comparison with limited budget k → prediction with full reasoning trace. The source-grounded KB contains structured symptom facts extracted from web sources by LLM, with original citations, and audited by domain experts. Introducing the full pipeline (KB + k=8 reference images) improved diagnostic accuracy by an average of 16.2 percentage points over the k=0 no-KB baseline [11]. Per-crop results at k=8 with KB: soybean 48.6% (vs. 31.1% baseline), maize 60.2% (vs. 42.0%), tomato 76.1% (vs. 52.3%), mango 97.5% (vs. 92.5%). Controlling for the reference budget, the pure KB contribution at k=8 averaged approximately +6.2 pp, with gains per crop ranging from +2.7 pp (soybean) to +9.1 pp (tomato). The agentic pipeline outperformed few-shot classification by 8.1 percentage points on average under equal reference budget. Failure modes were concentrated in cases where visual ambiguity overrode KB evidence (e.g., anthracnose vs. charcoal rot in stem diseases) [11].
 
 **LEMON (2026)** [12] introduced counterfactual reinforcement learning for optimizing multi-agent orchestration specifications. Using Group Relative Policy Optimization (GRPO) with local counterfactual signals on role/capability/dependency fields, LEMON learns to generate optimal orchestrator configurations. It achieved SOTA on MMLU, GSM8K, AQuA, MultiArith, SVAMP, and HumanEval benchmarks. While LEMON has not been applied to plant/forest phenotyping, its methodology is directly transferable: the agent orchestration policy (which models to invoke, in what order, with what parameters) under different data quality conditions could be learned via RL rather than hard-coded.
 
@@ -278,7 +278,41 @@ The five design dimensions analyzed in Section 3 are not independent. Optimizing
 
 ### 4.1 Dependency Map
 
-Figure 1 (conceptual) illustrates the five bidirectional and unidirectional dependencies among the design dimensions.
+Figure 1 illustrates the five design dimensions and their six cross-dimensional dependencies.
+
+```
+                  ┌──────────────────────┐
+                  │   Agent Orchestration │ (D4) LLM task decomposition,
+                  │   (PhenoAssistant)    │ tool selection, strategy routing
+                  └──┬───┬───┬───┬───────┘
+                     │   │   │   │
+         ┌───────────┘   │   │   └───────────┐
+         │ D4             │   │ D6            │ D4
+         ▼                │   ▼               ▼
+  ┌──────────────┐       │  ┌──────────┐  ┌──────────────┐
+  │ Data Quality │◄─D5──►│  │ Encoder  │  │   Fusion     │
+  │  Awareness   │       │  │  (DUNIA) │──┤ (MSFMamba/   │
+  │ (Fmask,      │       │  │          │D2│ DCMNet/      │
+  │ s2cloudless) │         │  └────┬─────┘  │ FusDreamer)  │
+  └──────┬───────┘         │       │        └──────────────┘
+         │                 │       │ D1            ▲
+         │ D3              │       ▼               │
+         └─────────────────┼─► ┌──────────────┐    │
+                            │  │  Temporal    │    │ D3
+                            │  │  Phenology   ├────┘
+                            │  │  (Option B+C)│ quality→fusion
+                            │  └──────────────┘
+                            │
+  Dependencies (──► unidirectional, ◄──► bidirectional):
+  D1: Encoder ↔ Temporal (bidirectional) — temporal signal vs. weight-sharing
+  D2: Encoder → Fusion (unidirectional) — output granularity constrains fusion
+  D3: Quality → Fusion (unidirectional) — quality signals → fusion control
+  D4: Agent ↔ Quality + Fusion (bidirectional) — strategy selection + feedback
+  D5: Temporal ↔ Quality (bidirectional) — phenology affects quality expectations
+  D6: Agent → Encoder + Temporal (unidirectional) — task routing to decoder branches
+```
+
+The central insight of this dependency map is that the Agent Orchestration and Data Quality Awareness dimensions form a *control loop* (D4): the agent receives quality assessments, reasons about their implications, and selects fusion strategies. However, this control loop is only possible if the Quality → Fusion interface (D3) exists—a connection that, as identified in Section 3.5, has not been built in any published system.
 
 **D-1: Encoder ↔ Temporal Phenology (bidirectional).** The encoder determines what temporal information is accessible. A single-date encoder (DUNIA current) provides no temporal signal to downstream modules, regardless of how sophisticated the temporal modeling layer is. Conversely, the temporal modeling strategy feeds back into encoder design: if Option B (Temporal Transformer) is adopted, the spatial encoder must operate in Siamese mode with shared weights across time steps, and the decoder must preserve temporal consistency in cross-modal alignment (Zero-CL with GEDI waveforms applied independently at each time step, with temporal smoothness constraints).
 
@@ -327,6 +361,30 @@ Based on the dependency analysis and the availability of verified components, we
 - Knowledge base: Forestry domain knowledge (structured Flora, phenological calendars, regional forest inventory) integrated as SAGE-style source-grounded KB for agent reasoning.
 - Validation: End-to-end task completion rate on ForestPheno-Bench (Section 5).
 
+### 4.4 Integration Risks and Feasibility
+
+The integration roadmap proposed above assumes that components from different research groups, implemented in different frameworks, can be composed into a single system. This subsection identifies the specific technical risks and assesses the feasibility of each integration step based on the publicly available code and documentation of each component.
+
+**Table 6. Component Integration Feasibility Assessment.**
+
+| Component | Open-Source | Framework | Key Integration Risk | Mitigation Strategy |
+|-----------|-------------|-----------|---------------------|---------------------|
+| **DUNIA** [9] | Yes | PyTorch | Encoder weights optimized for single-date median composites; adapting to multi-temporal input requires architectural modification to the encoder stem | Option B (freeze spatial backbone, attach Temporal Transformer with shared weights) avoids modifying DUNIA's pretrained weights directly |
+| **DCMNet** [7] | Yes | PyTorch | Routing gate consumes concatenated HSI+LiDAR features; injecting an external Agent embedding requires modifying the FC layer input dimension | FiLM-style conditioning (agent_context → affine transform on routing gate input) adds ≤1% parameter overhead with no retraining of backbone |
+| **MSFMamba** [6] | Yes | PyTorch + Mamba | Mamba SSM kernels require CUDA compilation; compatibility with DUNIA's encoder outputs (64-dim embeddings) not tested | DUNIA's 64-dim output dimension is compatible with MSFMamba's linear projection layer; CUDA kernels are pre-compiled in the official repository |
+| **FusDreamer** [25] | Yes | PyTorch + Diffusers | Diffusion model inference latency (16–67 s/sample) is prohibitive for real-time use; not suitable for large-area deployment | Use FusDreamer only for few-shot and prompt-guided scenarios; MSFMamba for production-scale deployment |
+| **PhenoAssistant** [4] | Partially (AutoGen-based) | AutoGen + GPT-4 API | Proprietary LLM API dependency; tool schema definition requires manual engineering for each new vision model; fine-grained visual reasoning remains a bottleneck (15% failure rate) | LangGraph SupervisorGraph provides equivalent orchestration with open-source LLM options; decomposing visual reasoning from orchestration limits LLM failures to strategy selection |
+| **TaxoNet** [10] | Not publicly available as of writing | PyTorch (assumed) | The dual-margin loss implementation is not open-source, requiring re-implementation from the paper description | The loss function is mathematically explicit in TaxoNet's paper (Proposition 2); re-implementation is straightforward with standard softmax + margin extensions |
+
+**Cross-component risks:**
+
+- **Training strategy conflict**: DUNIA's Zero-CL pretraining (ZCA whitening + contrastive loss) and DCMNet's supervised fusion training (CE loss) optimize for different objectives. Joining them in a single training loop may cause gradient interference. Recommendation: stage-wise training—pretrain DUNIA encoder, freeze, then train fusion module separately.
+- **API compatibility**: DUNIA (PyTorch 1.x/2.x), MSFMamba (requires Mamba CUDA kernels), LangGraph (Python ≥3.9), and AutoGen (GPT-4 API) have different dependency trees. Containerization (Docker) with pinned versions is essential for reproducibility.
+- **Data format mismatch**: DUNIA expects Sentinel-1/2 GeoTIFF patches at 10 m resolution in a specific band ordering; DCMNet expects .mat-format HSI cubes + LiDAR rasters; PureForest provides LAZ 1.4 + GeoTIFF. A unified data loader with standardized preprocessing (rasterio for GeoTIFF, laspy for LAZ, scipy for .mat) must be developed. This is engineering overhead, not a research risk.
+- **Attention mechanism mismatch**: DUNIA's dual-decoder produces separate OV (vertical) and OH (horizontal) embeddings. DCMNet's cross-modal attention expects a single feature map per modality. Selecting which decoder output to route to which fusion head is a design decision with no precedent in the literature. Recommendation: OV → LiDAR channel, OH → HSI channel in standard HSI-LiDAR fusion benchmarks.
+
+**Overall assessment**: The integration is technically feasible with moderate engineering effort (estimated 2–4 person-months for Phase 1). Four of six components are fully open-source; the remaining two (PhenoAssistant's orchestration logic and TaxoNet's loss) are replicable from paper descriptions.
+
 ---
 
 ## 5. Evaluation and Benchmarks
@@ -368,6 +426,19 @@ The weight matrix is defined by forestry domain experts and reflects the asymmet
 
 **Tail-Recall@K** focuses evaluation on the most conservation-relevant subset: the K% rarest species (by training sample count). For PureForest with 18 species, Tail-Recall@20 would measure the average recall of the 4 rarest species. This metric directly addresses the "head-class dominance" problem identified across all reviewed fusion methods—Berlin's Commercial Area class achieves <35% across all five fusion methods tested [6], [7], [24].
 
+**Table 5. QUEST-Forest Forest-Specific Metrics: Calculation Methods and Ecological Rationale.**
+
+| Metric | Calculation | Validation Datasets | Ecological / Management Significance |
+|--------|-------------|---------------------|--------------------------------------|
+| **Tail-Recall@K** | Average recall over K% rarest species by training count | PureForest (13 classes), PlantD (64 classes) | Prioritizes conservation-relevant rare species; a system with 95% OA but 20% Tail-Recall is ecologically hazardous |
+| **Cost-Weighted Error Rate (CER)** | Σ(w_i × error_i) / N, weights defined by forestry domain panel | Any multi-class benchmark with expert weight matrix | Asymmetric costs: misclassifying endangered species as common (w=10.0) is more damaging than the reverse (w=5.0); directly informs management risk |
+| **Open-Set TNR@95** | TNR at 95% TPR operating point | PureForest + 5 held-out species from PlantD | Quantifies "knowing when you don't know"—critical for deployment in biodiverse regions where unseen species are the norm |
+| **Head-Tail Gap** | F1(head) − F1(tail), by frequency bin | PureForest (head ≥100, tail ≤10 samples) | Measures model bias toward dominant species; gap > 30 percentage points indicates potential for silent monitoring failures |
+| **Pheno-Stage Accuracy** | Per-stage weighted F1 across phenological phases | DeepPhenoTree, MODIS phenology validation sites | Seasonal robustness: a species correctly identified in summer but misclassified in spring has limited operational value |
+| **Modality-Inconsistency Score** | Divergence between spectral-only and structural-only predictions on same pixel | No existing dataset; requires new multi-modal benchmark | Detects "green desert" phenomenon: spectral recovery masking structural degradation |
+
+These metrics are designed to be computable on existing public datasets with minimal additional annotation. Tail-Recall@K, CER, and Head-Tail Gap can be evaluated on PureForest's 13-class split using the frequency bins provided in the original data release [3]. Open-Set TNR@95 requires supplementing PureForest with 5–10 held-out species from PlantD that do not occur in the training distribution. Pheno-Stage Accuracy requires the DeepPhenoTree dataset [15], which provides ground-truth phenological stage labels for apple trees at multiple European sites. Modality-Inconsistency Score currently lacks a public benchmark and represents a data gap to be addressed by the community.
+
 ### 5.3 Tiered Task Structure
 
 Evaluation tasks are structured in three tiers to enable precise error source localization:
@@ -384,7 +455,7 @@ For each tier, specific baseline methods with known performance characteristics 
 |----------|------|---------------------------|
 | ResNet-50 + CE loss | T1 | PureForest VHR OA 73.1% [3] |
 | ResNet-50 + LDAM | T1 | Standard long-tail baseline |
-| TaxoNet | T1 | AA-Central macro-recall +6% over LDAM [10] |
+| TaxoNet | T1 | AA-Central macro-recall +5.1 pp over LDAM [10] |
 | DUNIA zero-shot | T1 | Tree height RMSE 2.0 m, species wF1 76.0% [9] |
 | CLIP/DINOv2 + prompt | T1 | Zero-shot generalization baseline |
 | GPT-4V / Gemini Pro Vision | T2, T3 | General VLM agent baseline |
@@ -408,39 +479,45 @@ This section catalogs the specific gaps identified across the five design dimens
 
 ### 6.2 Validation Experiments
 
+Each experiment is formulated as a falsifiable hypothesis with pre-registered success criteria. Unlike typical ablation studies that report post-hoc "best" configurations, these experiments specify the precise metric, threshold, and comparison baseline before execution.
+
 **V-1 (G-1): Temporal Enhancement of DUNIA Encoder**
 
 - **Existing results**: DUNIA zero-shot PASTIS OA 56.2% (single median composite); AnySat fine-tuned PASTIS OA 81.1% (multi-temporal input); DUNIA zero-shot tree height RMSE 2.0 m [9].
-- **Hypothesis to validate**: Adding 3–6 bimonthly Sentinel-2 composites as input to a Temporal Transformer layer atop the DUNIA spatial encoder, with cross-temporal pixel consistency loss preserving Zero-CL alignment, will close ≥50% of the 24.9 pp gap between DUNIA zero-shot and AnySat on PASTIS (baseline: DUNIA 56.2% OA vs. AnySat 81.1% OA), while maintaining zero-shot tree height RMSE within 10% of the single-date baseline.
-- **Proposed experiment**: (a) Extract 3 bimonthly Sentinel-2 composites (April/July/October) for each GEDI footprint in DUNIA's pretraining dataset. (b) Implement DOY positional encoding + 4-head temporal self-attention (2 layers) on top of frozen DUNIA spatial encoder. (c) Jointly fine-tune with Zero-CL loss (unchanged) + cross-temporal pixel consistency loss. (d) Compare zero-shot tree height RMSE (should be ≤2.2 m) and PASTIS OA (should be ≥70%). (e) Ablation: remove DOY PE, remove temporal self-attention (mean pooling), remove cross-temporal loss.
-- **Success criterion**: PASTIS OA ≥68.7% (≥50% gap closure to AnySat baseline of 81.1%) with tree height RMSE ≤2.2 m.
+- **Operationalization of "maintaining zero-shot capability"**: Zero-shot capability is considered maintained if (a) tree height RMSE with the temporally-enhanced encoder on the DUNIA test set does not exceed 2.2 m (≤10% degradation from baseline 2.0 m), and (b) canopy cover RMSE does not exceed 12.9% (≤10% degradation from baseline 11.7%). Both metrics are evaluated under the identical zero-shot KNN=50 protocol used by Fayad et al. [9].
+- **Hypothesis to validate**: Adding 3–6 bimonthly Sentinel-2 composites as input to a Temporal Transformer layer atop the DUNIA spatial encoder, with cross-temporal pixel consistency loss preserving Zero-CL alignment, will (a) achieve PASTIS OA ≥68.7% (≥50% closure of the 24.9 pp gap between DUNIA zero-shot at 56.2% and AnySat at 81.1%), and (b) maintain zero-shot tree height RMSE ≤2.2 m and canopy cover RMSE ≤12.9%.
+- **Proposed experiment**: (a) Extract 3 bimonthly Sentinel-2 composites (April/July/October) for each GEDI footprint in DUNIA's pretraining dataset. (b) Implement DOY positional encoding + 4-head temporal self-attention (2 layers, d_model=64 matching DUNIA's embedding dimension) on top of frozen DUNIA spatial encoder weights. (c) Jointly fine-tune with Zero-CL loss (unchanged across time steps) + cross-temporal pixel consistency loss L_consistency = MSE(e_t, e_{t+1}) × exp(−α·|DOY_t − DOY_{t+1}|). (d) Evaluate zero-shot tree height, canopy cover, and PASTIS OA. (e) Ablation: remove DOY PE, remove temporal self-attention (mean-pooling instead), remove cross-temporal loss.
+- **Success criterion**: PASTIS OA ≥68.7% AND tree height RMSE ≤2.2 m. Partial credit: PASTIS OA ≥65% with height RMSE ≤2.2 m indicates temporal gain with preserved structural accuracy.
 
 **V-2 (G-2): Quality-Adaptive Fusion Threshold Characterization**
 
 - **Existing results**: DCMNet Trento OA 98.96% (clean data) [7]; MSFMamba Houston2013 OA 92.86% (clean data) [6]; s2cloudless cloud detection F1 88–92%; ActionMAE modality dropout robustness verified in video domain [33].
-- **Hypothesis to validate**: There exists a cloud cover threshold θ_c ∈ [20%, 50%] such that switching from HSI-dominant (HSI weight 0.7) to LiDAR-dominant (LiDAR weight 0.7) fusion yields statistically significant OA improvement on synthetically cloud-degraded Trento/Houston data.
-- **Proposed experiment**: (a) Apply synthetic cloud masks (circular and irregular, 0–80% coverage in 10% increments) to HSI patches in Trento and Houston2013. (b) Train MSFMamba with modality-specific quality scores as additional SSM parameter inputs (cf. Section 3.5.2). (c) For each cloud cover level, measure OA under three fusion strategies: equal-weight, HSI-dominant (0.7/0.3), LiDAR-dominant (0.3/0.7). (d) Determine the crossover point where LiDAR-dominant surpasses equal-weight with p < 0.01 (McNemar's test).
+- **Hypothesis to validate**: There exists a cloud cover threshold θ_c ∈ [20%, 50%] such that switching from HSI-dominant (HSI weight 0.7, LiDAR 0.3) to LiDAR-dominant (LiDAR weight 0.7, HSI 0.3) fusion yields a statistically significant OA improvement (≥2 pp, p < 0.01 via McNemar's test on per-class predictions) on synthetically cloud-degraded Trento and Houston2013 data. Below θ_c, HSI-dominant fusion is expected to outperform; above θ_c, LiDAR-dominant fusion is expected to outperform, with a measurable crossover region.
+- **Proposed experiment**: (a) Apply synthetic cloud masks (circular, irregular, and stratus-like patterns, 0–80% coverage in 10% increments, 5 random seeds per level) to HSI patches in Trento (6 classes, 63×63 px) and Houston2013 (15 classes, 31×31 px). (b) Train MSFMamba with modality-specific quality scores as additional SSM parameter inputs: B/Δ parameters are generated by concatenating [HSI_features, LiDAR_features, quality_score] before the linear projection. (c) Deploy ActionMAE-style quality-adaptive dropout during training: drop_prob(HSI) = min(0.5, cloud_pct/100). (d) For each (dataset, cloud_level, seed) combination, measure OA under three strategies: equal-weight (0.5/0.5), HSI-dominant (0.7/0.3), LiDAR-dominant (0.3/0.7). (e) Determine θ_c as the lowest cloud level where LiDAR-dominant OA exceeds equal-weight OA by ≥2 pp with p < 0.01, and HSI-dominant OA falls below equal-weight OA by ≥2 pp.
 - **Success criterion**: Statistically significant threshold identified for at least one dataset; quality-adaptive strategy outperforms any fixed strategy across the full cloud cover range.
 
 **V-3 (G-3): Agent Strategy Selection vs. Expert Baseline**
 
 - **Existing results**: PhenoAssistant tool selection accuracy 100% (50/50) [4]; SAGE KB-guided diagnosis improvement 16.2 pp [11]; FusDreamer prompt-guided fusion achieves OA 96.36% on few-shot Trento [25].
-- **Hypothesis to validate**: An LLM agent receiving structured quality reports (cloud cover, LiDAR density, HSI SNR, phenology stage) and task specifications can select fusion strategies with ≥85% agreement with expert-designed optimal strategies, where expert strategies are defined as those achieving highest OA under the given quality conditions (as characterized in V-2).
-- **Proposed experiment**: (a) Generate 100 test scenarios with varying quality profiles and task types. (b) For each scenario, determine the expert-optimal strategy using the V-2 threshold characterization. (c) Provide the same quality reports to GPT-4o (temperature = 0.1) with a strategy selection prompt listing available fusion methods and their characteristics. (d) Measure agreement rate (exact match and rank correlation). (e) For disagreement cases, run both strategies and compare actual OA.
+- **Hypothesis to validate**: An LLM agent (GPT-4o, temperature = 0.1, identical to PhenoAssistant's Manager configuration) receiving structured quality reports and task specifications can select fusion strategies with ≥85% exact-match agreement with expert-designed optimal strategies. Expert strategies are defined as the fusion method + weight configuration that achieves the highest OA for the given quality profile as characterized by V-2's threshold curve. The agent's decision space consists of: fusion method ∈ {MSFMamba, DCMNet, FusDreamer}, modality weights ∈ {equal, HSI-dominant, LiDAR-dominant}, and temporal context ∈ {single-date, multi-temporal}.
+- **Proposed experiment**: (a) Generate 100 test scenarios by sampling from a Cartesian product of {cloud cover (0%, 20%, 40%, 60%, 80%), LiDAR density (1, 5, 20, 40 pts/m²), task type (species classification, height estimation, phenology stage)}—each scenario is a JSON object with numeric quality values and a natural language task description. (b) For each scenario, determine the expert-optimal strategy using the V-2 threshold curve (for cloud-dependent scenarios), expert judgment (for multi-dimensional scenarios where thresholds are not yet characterized), and domain knowledge (for temporal decisions). (c) Provide the same JSON quality reports + task descriptions to GPT-4o with a strategy selection prompt listing available methods and their documented characteristics (from Tables 2 and 3). (d) Measure exact-match agreement rate and Kendall rank correlation between agent and expert. (e) For disagreement cases, execute both strategies on synthetic test data and compare actual OA; report whether the agent's or expert's strategy yielded higher accuracy.
+- **Success criterion**: Agreement rate ≥85%; in disagreement cases, agent-selected strategy OA within 2 pp of expert-selected strategy in ≥80% of cases. Secondary: Kendall τ ≥ 0.7 on strategy rankings.
 - **Success criterion**: Agreement rate ≥85%; in disagreement cases, agent-selected strategy OA within 2 pp of expert-selected strategy.
 
 **V-4 (G-4): Dual-Margin Constraint in Cross-Modal Embedding Space**
 
-- **Existing results**: TaxoNet dual-margin loss +6% macro-recall on Auto-Arborist [10]; DUNIA OH embedding space produces species wF1 76.0% (zero-shot) and 82.2% (fine-tuned) on PureForest [9]; TaxoNet tail-class recall 57.1% (AA-Central) with 92.4% head-class recall [10].
-- **Hypothesis to validate**: Adding TaxoNet's dual-margin classification head to DUNIA's OH embedding space, with margin values dynamically scaled by taxonomic distance (larger margin for same-genus confusions), will improve PureForest tail-class (≤10 samples) recall by ≥5 pp over the CE baseline, without reducing head-class recall by more than 2 pp.
-- **Proposed experiment**: (a) Implement dual-margin softmax head on DUNIA's OH 64-dim embeddings. (b) Define taxonomic-distance-gated margins: margin_i = margin_base + λ × (1 − taxonomic_similarity(i, nearest_confusable_class)). (c) Train on PureForest 13-class split with frequency-bin stratification. (d) Compare tail-class recall (species with ≤10 training samples), macro-F1, and head-tail gap against CE baseline and LDAM baseline.
+- **Existing results**: TaxoNet dual-margin loss +5.1 pp macro-recall on Auto-Arborist [10]; DUNIA OH embedding space produces species wF1 76.0% (zero-shot) and 82.2% (fine-tuned) on PureForest [9]; TaxoNet tail-class recall 57.1% (AA-Central) with 92.4% head-class recall [10].
+- **Hypothesis to validate**: Adding a TaxoNet-style dual-margin classification head to DUNIA's OH 64-dim embedding space will improve PureForest tail-class recall by ≥5 pp over the CE baseline (current tail recall not separately reported in [9], but the head-tail gap is a known issue across all fusion methods). Taxonomic-distance-gated margins (larger margin for same-genus confusions, e.g., Quercus robur vs. Quercus petraea) will yield ≥2 pp additional tail-class recall gain compared to uniform margins, without reducing head-class recall by more than 2 pp from the CE baseline.
+- **Proposed experiment**: (a) Implement dual-margin softmax classification head (input: DUNIA OH 64-dim frozen embeddings, output: 13 PureForest classes). (b) Define taxonomic distance matrix T_ij ∈ [0,1] from standard plant taxonomy (genus=1.0, family=0.7, order=0.4, class=0.1), and set per-class margin m_i = m_base + λ × max_j (1 − T_ij) with λ ∈ {0.0, 0.5, 1.0, 2.0}. (c) Train 4 margin configurations + CE baseline + LDAM baseline, each with 3 random seeds, on PureForest's standard 70/15/15 train/val/test split stratified by frequency bin. (d) Report: per-class F1 (sorted by training frequency), macro-F1, Tail-Recall@20 (4 rarest of 13 classes), Head-Tail Gap, and confusion matrix confusion patterns (within-genus vs. cross-genus confusions). (e) Statistical test: one-sided paired t-test (n=3 seeds) for tail-class recall improvement over CE baseline.
+- **Success criterion**: Tail-Recall@20 improvement ≥5 pp over CE baseline (p < 0.05); head-class recall degradation ≤2 pp. Taxonomic-distance-gated margins provide ≥2 pp additional tail gain over uniform margins at the optimal λ.
 - **Success criterion**: Tail-class recall improvement ≥5 pp; head-class recall degradation ≤2 pp.
 
 **V-5 (G-5): ForestPheno-Bench Construction**
 
 - **Existing results**: PhenoAssistant manual evaluation 50 cases [4]; QUEST framework for medical LLM evaluation with five dimensions [37]; PureForest, PlantD, Houston2013, Trento as candidate data sources.
-- **Hypothesis to validate**: An automated, tiered evaluation benchmark with ≥200 test cases spanning closed-set, open-set, and cross-domain scenarios can distinguish the performance profiles of different agent + fusion configurations with ≥80% statistical power at α = 0.05.
-- **Proposed experiment**: Construct test dataset with: 80 closed-set species classification cases (frequency-stratified across head/medium/tail), 40 open-set cases (20% unknown species), 40 cross-domain cases (different geographic region or season), 40 composite reasoning cases (T2), 20 agentic decision cases (T3). Run 3 baseline configurations through the benchmark, compute Cohen's d for each metric between each pair of configurations, and determine minimum detectable effect size at 80% power.
+- **Hypothesis to validate**: An automated, tiered evaluation benchmark with ≥200 test cases spanning closed-set, open-set, and cross-domain scenarios can reliably distinguish (p < 0.05) the performance profiles of three distinct agent + fusion configurations with Cohen's d ≥ 0.5 (medium effect size) on at least 4 of the 6 QUEST-Forest metrics at ≥80% statistical power (α = 0.05, two-tailed).
+- **Proposed experiment**: Construct test dataset with exact case counts: 80 closed-set species classification cases (frequency-stratified: 30 head, 30 medium, 20 tail, drawn from PureForest 13 classes), 40 open-set cases (20 PureForest species + 20 held-out PlantD species not in PureForest's class set), 40 cross-domain cases (20 different season, 20 different geographic region, from PureForest's held-out polygons and PlantD's multi-country test split), 40 composite reasoning T2 cases (20 multi-step tool chaining, 20 temporal comparison), 20 agentic decision T3 cases (simulated quality scenarios with pre-defined expert action as ground truth). Total: 220 test cases. Run 3 configurations through the benchmark: (C1) DUNIA encoder + static equal-weight fusion + no agent, (C2) DUNIA + DCMNet dynamic routing + rule-based quality adaptation, (C3) DUNIA + MSFMamba + GPT-4o agent quality-aware strategy selection. Compute Cohen's d for each QUEST-Forest metric between each configuration pair. Determine minimum detectable effect size at 80% power given the achieved variance.
+- **Success criterion**: At least 4/6 metrics show significant differences (p < 0.05, Cohen's d ≥ 0.5) between at least two configurations. The benchmark's inter-rater reliability (test-retest on same configuration, two runs with different random seeds) achieves ICC ≥ 0.85. All test cases, evaluation code, and baseline configurations are publicly released.
 - **Success criterion**: Benchmark reliably distinguishes configurations with ≥5 pp OA difference at p < 0.05.
 
 ---
