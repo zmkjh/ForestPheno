@@ -280,39 +280,41 @@ The five design dimensions analyzed in Section 3 are not independent. Optimizing
 
 Figure 1 illustrates the five design dimensions and their six cross-dimensional dependencies.
 
-```
-                  ┌──────────────────────┐
-                  │   Agent Orchestration │ (D4) LLM task decomposition,
-                  │   (PhenoAssistant)    │ tool selection, strategy routing
-                  └──┬───┬───┬───┬───────┘
-                     │   │   │   │
-         ┌───────────┘   │   │   └───────────┐
-         │ D4             │   │ D6            │ D4
-         ▼                │   ▼               ▼
-  ┌──────────────┐       │  ┌──────────┐  ┌──────────────┐
-  │ Data Quality │◄─D5──►│  │ Encoder  │  │   Fusion     │
-  │  Awareness   │       │  │  (DUNIA) │──┤ (MSFMamba/   │
-  │ (Fmask,      │       │  │          │D2│ DCMNet/      │
-  │ s2cloudless) │         │  └────┬─────┘  │ FusDreamer)  │
-  └──────┬───────┘         │       │        └──────────────┘
-         │                 │       │ D1            ▲
-         │ D3              │       ▼               │
-         └─────────────────┼─► ┌──────────────┐    │
-                            │  │  Temporal    │    │ D3
-                            │  │  Phenology   ├────┘
-                            │  │  (Option B+C)│ quality→fusion
-                            │  └──────────────┘
-                            │
-  Dependencies (──► unidirectional, ◄──► bidirectional):
-  D1: Encoder ↔ Temporal (bidirectional) — temporal signal vs. weight-sharing
-  D2: Encoder → Fusion (unidirectional) — output granularity constrains fusion
-  D3: Quality → Fusion (unidirectional) — quality signals → fusion control
-  D4: Agent ↔ Quality + Fusion (bidirectional) — strategy selection + feedback
-  D5: Temporal ↔ Quality (bidirectional) — phenology affects quality expectations
-  D6: Agent → Encoder + Temporal (unidirectional) — task routing to decoder branches
+```mermaid
+graph TB
+    Agent["Agent Orchestration<br/>(PhenoAssistant)<br/>LLM task decomposition,<br/>tool selection, strategy routing"]
+    Quality["Data Quality Awareness<br/>(Fmask, s2cloudless)<br/>cloud cover, LiDAR density,<br/>HSI SNR, uncertainty maps"]
+    Encoder["Encoder<br/>(DUNIA)<br/>pixel-level cross-modal<br/>embeddings, Zero-CL"]
+    Fusion["Multimodal Fusion<br/>(MSFMamba/DCMNet/FusDreamer)<br/>dynamic routing,<br/>quality-adaptive weighting"]
+    Temporal["Temporal Phenology<br/>(Option B+C)<br/>Transformer + alignment loss,<br/>multi-date modeling"]
+
+    Agent -->|"D4: strategy selection<br/>+ quality feedback"| Quality
+    Agent -->|"D4: select fusion<br/>method + weights"| Fusion
+    Agent -->|"D6: route task to<br/>decoder branches"| Encoder
+    Agent -->|"D6: request temporal<br/>context window"| Temporal
+
+    Quality -->|"D3: quality signals<br/>→ fusion control"| Fusion
+    Quality <-->|"D5: phenology affects<br/>quality expectations"| Temporal
+
+    Encoder -->|"D2: pixel vs. patch<br/>granularity constrains fusion"| Fusion
+    Encoder <-->|"D1: temporal signal vs.<br/>weight-sharing architecture"| Temporal
+
+    style Agent fill:#1565c0,color:#fff
+    style Quality fill:#e65100,color:#fff
+    style Fusion fill:#2e7d32,color:#fff
+    style Encoder fill:#6a1b9a,color:#fff
+    style Temporal fill:#c62828,color:#fff
 ```
 
-The central insight of this dependency map is that the Agent Orchestration and Data Quality Awareness dimensions form a *control loop* (D4): the agent receives quality assessments, reasons about their implications, and selects fusion strategies. However, this control loop is only possible if the Quality → Fusion interface (D3) exists—a connection that, as identified in Section 3.5, has not been built in any published system.
+**Dependency summary:**
+| ID | Relationship | Type | Key implication |
+|----|-------------|------|-----------------|
+| D1 | Encoder ↔ Temporal | Bidirectional | Temporal strategy constrains encoder architecture (Siamese weight-sharing) |
+| D2 | Encoder → Fusion | Unidirectional | Pixel-level embeddings enable spatially precise fusion decisions |
+| D3 | Quality → Fusion | Unidirectional | Quality assessment must feed fusion control — a connection not yet built in any system |
+| D4 | Agent ↔ Quality + Fusion | Bidirectional | Agent integrates quality assessment with strategy selection; forms the central control loop |
+| D5 | Temporal ↔ Quality | Bidirectional | Phenological stage affects quality interpretation (leaf-on vs. leaf-off data reliability) |
+| D6 | Agent → Encoder + Temporal | Unidirectional | Task specification determines which decoder outputs and time steps are relevant |
 
 **D-1: Encoder ↔ Temporal Phenology (bidirectional).** The encoder determines what temporal information is accessible. A single-date encoder (DUNIA current) provides no temporal signal to downstream modules, regardless of how sophisticated the temporal modeling layer is. Conversely, the temporal modeling strategy feeds back into encoder design: if Option B (Temporal Transformer) is adopted, the spatial encoder must operate in Siamese mode with shared weights across time steps, and the decoder must preserve temporal consistency in cross-modal alignment (Zero-CL with GEDI waveforms applied independently at each time step, with temporal smoothness constraints).
 
