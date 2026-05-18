@@ -1,6 +1,8 @@
-# ForestPheno — 林木表型多Agent系统
+# ForestPheno — 林木表型多智能体系统
 
-南京林业大学研究生项目。
+## 项目概述
+
+基于 LLM 编排的多模态林木表型分析系统的文献调研与设计空间分析。核心输出为一篇设计空间导向的学术综述，提出了 ForestPheno 系统的五维设计框架。
 
 ## 目录结构
 
@@ -46,17 +48,9 @@
 | `Ref_PlantD_ForestDataset_arXiv2024.pdf` | 多卫星人工林数据集 | ★★ 数据参考 |
 | `Ref_FusDreamer_WorldModel_arXiv2025.pdf` | World Model遥感融合 | ★★ 前沿参考 |
 
-## 论文元数据
+## 论文状态
 
-- **122篇** 定向分类论文 + **98篇** 最新论文 + **14篇** 经典论文
-- 来源: OpenAlex API
-- 覆盖4大方向: 碳/生物量、树种/遥感、病虫害/火灾、智慧林业/数字孪生
-
-## 研究方向
-
-Agent-Orchestrated Cross-Modal Contrastive Forest Phenotyping
-
-基于LLM编排的多模态（RGB+LiDAR+高光谱+时序）林木表型分析系统，核心创新：
-1. 对比学习预训练跨模态编码器
-2. Agent动态模态路由融合
-3. 野外复杂环境自适应
+- 英文版：`papers_data/综述_design_space_oriented.md`（34 篇引用，~10,600 词）
+- 中文版：`papers_data/综述_design_space_oriented_CN.md`
+- 设计空间调研：`papers_data/surveys/0*.md`（15 篇）
+- 事实核查报告：`papers_data/surveys/1*_FactCheck*.md`（3 篇）
