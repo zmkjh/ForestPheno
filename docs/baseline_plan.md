@@ -91,22 +91,20 @@
 
 ## 实验 D：失败归因
 
-**目的**：回答"没找到树"、"找到了但认错了"、"多找了不存在的树"各占多少。
+**目的**：区分"没找到树"和"找到了但认错了"。
 
 **输入**：实验 B 的检测结果 + 实验 C 的分类结果 + 标注 bbox
 
 **操作**：
 1. 端到端流水线：DeepForest 检测 → CLIP+SVM 分类
-2. 错误三分法（遥感论文标准写法）：
-   - **Missed tree**：树未被检测到（GT bbox 无任何预测框 IoU ≥ 0.5）
-   - **False positive**：预测框无对应 GT（IoU < 0.5 且分类结果存在）
-   - **Misclassification**：IoU ≥ 0.5 但分类标签 ≠ 真值
-3. 计算三类失败占比
-4. 对 Misclassification 子集绘制条件混淆矩阵，列出 top-5 跨域混淆对
-5. **跨域混淆矩阵 diff**：ΔConfusion = Conf_target − Conf_source，高亮仅在混交林中出现的混淆对
-6. 对 top-5 混淆对裁出典型样本做可视化
+2. 错误分解：
+   - 检测失败：树未被检测到（GT bbox 无任何预测框 IoU ≥ 0.5）
+   - 分类失败：树被检测到但标签错误（IoU ≥ 0.5 但分类标签 ≠ 真值）
+3. 计算两类失败占比
+4. 对分类失败子集绘制条件混淆矩阵，列出 top-5 跨域混淆对
+5. 对 top-5 混淆对裁出典型样本做可视化
 
-**产出**：误差归因饼图 + 条件混淆矩阵 + 典型误分类样本
+**产出**：误差归因 + 条件混淆矩阵 + 典型误分类样本
 
 ---
 
@@ -124,17 +122,6 @@ pip install matplotlib seaborn  # 可视化
 
 ---
 
-## 可选增强（有余力时追加，全部零自研）
-
-| 增强 | 操作 | 成本 | 价值 |
-|------|------|------|------|
-| CLIP vs DINOv2 backbone 对比 | 实验 C 中并行提取两组特征，报告跨域退化幅度差异 | 低 | 强（消融 backbone 影响） |
-| Genus-level 重算 | 将 species 标签上卷为 genus，重跑实验 C 的 OA/Drop Rate | 低 | 高（消除物种不重叠干扰） |
-| t-SNE / UMAP 可视化 | 源域 + 目标域 CLIP 特征联合降维，按域着色 | 低 | 高（图好看，直观展示域偏移） |
-| 冠层高度作为辅助特征 | 从 LiDAR CHM 提取每个 crown 的 max height，作为 SVM 额外特征列 | 低 | 中（验证 LiDAR 结构信息价值） |
-
----
-
 ## 潜在风险与应对
 
 | 风险 | 应对 |
@@ -144,7 +131,6 @@ pip install matplotlib seaborn  # 可视化
 | 纯林公开数据物种与本地完全不重叠 | 降级为 genus-level 分类，或只用形态特征不依赖物种匹配 |
 | DeepForest 零样本检测率极低 | 不 fine-tune，如实报告退化幅度，检测结果作为"上限对比"而非流水线依赖 |
 | 混交林内纯林斑块不够大 | 降级为"全混交林域内 baseline + 跨域退化"，不做纯林 vs 混交林内部分层 |
-| 源域与目标域 crown crop 方式不一致 | 统一预处理：bbox 外扩 10% padding + 固定 resize 224×224，杜绝 crop 分布偏移噪声 |
 
 ---
 
@@ -155,6 +141,6 @@ pip install matplotlib seaborn  # 可视化
 1. 域内能做到多好？（上限，mean ± std over 5 splits）
 2. 预训练检测器能找到多少棵树？（检测退化，分层统计）
 3. 纯林分类器放混交林退化多少？（跨域迁移 + target linear probe 对照）
-4. 退化中，Missed tree / False positive / Misclassification 各占多少？（三类归因 + 混淆矩阵 diff）
+4. 退化中，检测失败 vs 分类失败各占多少？（两类归因）
 
 四个答案合起来，就是一份完整的跨域迁移诊断报告。
