@@ -100,7 +100,7 @@ DUNIA's zero-shot performance is particularly relevant for forest scenarios with
 
 #### 3.1.2 Comparative Observations
 
-DUNIA achieves the lowest tree height RMSE (1.3 m fine-tuned, 2.0 m zero-shot) and 4.22 s inference on 20 km²—the only pixel-level encoder in the comparison. AnySat achieves the highest species classification on PureForest (wF1 82.3) with native multi-temporal support but is patch-level and 40× slower at inference. CROMA, SatMAE, DOFA, and DeCUR all operate at patch-level with tree height RMSE ≥3.5 m. The key unresolved question for forest applications is whether a single encoder can simultaneously deliver pixel-level cross-modal alignment and temporal phenology awareness.
+DUNIA achieves the lowest tree height RMSE (1.3 m fine-tuned, 2.0 m zero-shot) and 4.22 s inference on 20 km²—the only pixel-level encoder in the comparison. AnySat achieves the highest species classification on PureForest (wF1 82.3) but is patch-level and 40× slower at inference. Other methods achieve significantly higher RMSE (≥3.5m for tree height), all operating at patch-level. Whether a single encoder can simultaneously deliver pixel-level cross-modal alignment and temporal phenology awareness remains the key open question for forest applications.
 
 #### 3.1.3 Identified Gap: Temporal Phenology
 
@@ -126,15 +126,13 @@ Table 3 compares the five leading fusion paradigms on quantitative benchmarks. A
 
 *Note: Inference times are reported as stated in the original papers and may not be directly comparable due to differences in hardware (GPU model, batch size) and software implementation (framework, optimization level). They are included as indicative order-of-magnitude references for deployment feasibility assessment rather than precise benchmarking comparisons.*
 
-**MSFMamba (2024)** introduced the selective state-space model (Mamba) to multimodal fusion, achieving linear O(n) complexity with multi-scale spatial scanning and cross-modal SSM parameterization (Fus-Mamba: one modality generates the A/B/C/Δ parameters for processing the other). On Houston2018, it achieved OA 92.38%; on Augsburg (HSI+SAR), 91.38%. Its dual-input design naturally accepts a third source, making it the most amenable to agent-controlled fusion among the five candidates [6].
+**MSFMamba (2024)** introduced the selective state-space model (Mamba) to multimodal fusion, achieving linear O(n) complexity via cross-modal SSM parameterization (Fus-Mamba). On Houston2018 OA 92.38%; Augsburg (HSI+SAR) 91.38% [6].
 
-**DCMNet (2025)** marked the transition from static to dynamic fusion. Its three-layer routing space deploys spatial bilinear cross-attention (BSAB), channel bilinear cross-attention (BCAB), and integrated convolution (ICB) blocks, with a routing gate generating path probabilities from feature statistics. The "dynamic" is network-learned data dependency—routing adapts to input feature statistics but does not perceive external data quality or scene context. On Trento, OA reached 98.96%, Kappa 98.61% [6].
+**DCMNet (2025)** marked the transition from static to dynamic fusion, using a three-layer routing space (BSAB, BCAB, ICB blocks) where a routing gate generates path probabilities from feature statistics. Trento OA reached 98.96%, Kappa 98.61% [6].
 
-**DFFNet (2025)** shifted dynamic fusion to the frequency domain. Its dynamic filter block (DFB) applies 2D FFT to input features, generates a dynamic frequency kernel via GAP+MLP+Softmax combination of learnable basis filters, and filters irrelevant frequency components before IFFT reconstruction. At 1.28M parameters and 0.239 s inference, it achieves Houston2013 OA 92.35%. The frequency-domain approach is relevant for phenology because distinct phenological stages exhibit distinct frequency signatures [22].
+**DFFNet (2025)** and **IFGNet (2026)** form the frequency-domain fusion family. DFFNet applies 2D FFT with dynamic frequency kernel generation (GAP+MLP+Softmax), achieving Houston2013 OA 92.35% at 1.28M parameters [22]. IFGNet extends this via KAN B-spline implicit frequency aggregation, reaching OA 99.37% (Kappa 99.32%), though code is not open-source [7].
 
-**FusDreamer (2025)** introduced a latent diffusion model (LaMG) generating a unified multimodal representation container, with CLIP-based open-world knowledge-guided consistency projection (OK-CP) enabling text-prompt-driven fusion alignment. It is the only method tested under few-shot settings (13–18 samples/class on Trento, OA 96.36%). The text-prompt interface is uniquely suited for agent control, allowing injection of phenological context and quality assessments as natural language prompts [23].
-
-**IFGNet (2026)** achieved the highest reported accuracy (Houston2013 OA 99.37%, Kappa 99.32%) by replacing fixed activation functions with KAN B-spline functions, which model continuous nonlinear relationships through learnable spline coefficients. Its LiDAR-guided spatial implicit aggregation samples neighborhood features via B-spline interpolation. The B-spline local support property naturally models gradual phenological transitions. Code is not open-source as of publication [7].
+**FusDreamer (2025)** introduced latent diffusion (LaMG) with CLIP-guided prompt alignment, enabling text-prompt-driven fusion—the only method tested under few-shot settings (13–18 samples/class, Trento OA 96.36%). The text-prompt interface is suited for agent control [23].
 
 #### 3.2.2 Comparative Observations
 
@@ -156,9 +154,9 @@ Three agent paradigms have been demonstrated in the plant/foresetting domain, wi
 
 **PhenoAssistant (2026)** [4] employs a centralized multi-agent architecture: a Manager Agent (GPT-4o, temperature = 0.1) receives natural language instructions, generates a step-wise plan, and dispatches tasks to a toolkit comprising vision model zoo (Mask2Former, Leaf-only SAM, DINOv2-base with LoRA fine-tuning), phenotyping extraction tools, code writer, data visualizer, plot analyzer (Pandas AI-based), table analyzer, RAG agent, and deterministic statistical modules (ANOVA, Tukey-Kramer post-hoc). Tools are exposed via structured schemas (name, description, parameters, I/O format) built on the AutoGen framework. Evaluation on 20 manually designed tasks yielded: tool chain rationality 4.25/5 (4.35/5 with Critic Agent), tool existence 5.00/5, tool appropriateness 4.65/5 (4.90/5 with Critic), argument correctness 4.30/5 (4.40/5 with Critic). Vision model type recommendation achieved 100% accuracy (50/50 tasks); vision model exact match achieved 100% accuracy (20/20 tasks). Data analysis tasks achieved 85% accuracy (17/20); all three failures were attributed to fine-grained visual reasoning by the Plot Analyser—the LLM misinterpreted chart elements, indicating that LLM-based visual reasoning remains the primary bottleneck [4].
 
-**SAGE (2026)** [10] employs a training-free agentic reasoning pipeline for crop disease diagnosis: organ identification → anatomy-indexed filtering → source-grounded knowledge base (KB) symptom matching → sequential reference image comparison with limited budget k → prediction with full reasoning trace. Introducing the full pipeline (KB + k=8 reference images) improved diagnostic accuracy by an average of 16.2 percentage points over the k=0 no-KB baseline. The pure KB contribution at k=8 averaged approximately +6.2 pp across crops. The agentic pipeline outperformed few-shot classification by 8.1 percentage points on average under equal reference budgets. Failure modes were concentrated where visual ambiguity overrode KB evidence (e.g., anthracnose vs. charcoal rot in stem diseases) [10].
+**SAGE (2026)** [10] employs a training-free agentic reasoning pipeline for crop disease diagnosis: organ identification → anatomy-indexed filtering → source-grounded knowledge base (KB) symptom matching → sequential reference image comparison with limited budget k → prediction with full reasoning trace. The full pipeline (KB + k=8 reference images) improved diagnostic accuracy by an average of 16.2 percentage points over the baseline [10].
 
-**LEMON (2026)** [11] introduced counterfactual reinforcement learning (GRPO with local counterfactual signals) for optimizing multi-agent orchestration specifications. While not yet applied to plant phenotyping, its methodology offers a path toward learning agent policies under varying data quality conditions rather than hard-coding orchestration rules.
+**LEMON (2026)** [11] introduced counterfactual reinforcement learning for optimizing multi-agent orchestration specifications—a potential path toward learning agent policies under varying data quality rather than hard-coding orchestration rules.
 
 #### 3.3.2 Comparative Observations
 
@@ -176,7 +174,7 @@ Forest phenology—the seasonal cycling of biological events (budburst, leaf exp
 
 #### 3.4.1 Why Temporal Modeling Is Critical
 
-The evidence for temporal information's importance is both positive and negative. Positively, AnySat achieves PASTIS classification wF1 81.1 with native multi-temporal input, while DUNIA—using a single median composite—achieves only 77.0 under fine-tuning and 56.2% under zero-shot [8]: a direct quantification of temporal information's value. Negatively, Bejide (2026) identified "temporal recovery asynchrony" as a core inconsistency driver in forest ecosystem representation [24]. The "green desert" phenomenon—spectrally recovered canopy greenness masking persistent structural degradation—can only be detected through temporal analysis. Gauli et al. (2026) demonstrated feasible temporal machine learning in complex forest terrain: 13 years of VIIRS fire data over Nepal Himalayas aggregated into 11,595 discrete events with cross-ecoregion R² = 0.683–0.757 [25].
+Temporal information is decisive for species discrimination. AnySat achieves PASTIS classification wF1 81.1 with native multi-temporal input, while DUNIA—using a single median composite—achieves 56.2% under zero-shot [8]. The "green desert" phenomenon (spectrally recovered canopy masking structural degradation) can only be detected through temporal analysis [24]. Gauli et al. demonstrated feasible temporal ML in complex forest terrain with cross-ecoregion R² = 0.683–0.757 [25].
 
 #### 3.4.2 Candidate Methods
 
@@ -201,11 +199,11 @@ Table 4 compares the three options on key design dimensions.
 
 #### 3.4.3 Comparative Observations
 
-Input-level concatenation (Option A) is architecturally simplest but provides no temporal ordering awareness. Temporal Transformer (Option B) provides explicit DOY positional encoding and global temporal attention but requires encoder architectural modification. Post-hoc alignment loss (Option C) serves as a regularizer without architectural changes but cannot compensate for a base encoder trained on single-date medians. No existing method simultaneously delivers pixel-level cross-modal alignment (DUNIA's strength) and temporal phenology awareness (AnySat's strength)—both are required for forest phenotyping of deciduous mixed stands.
+Input-level concatenation (Option A) is simplest but provides no temporal ordering awareness. Temporal Transformer (Option B) provides explicit DOY encoding and global temporal attention but requires architectural modification. Post-hoc alignment loss (Option C) serves as a regularizer but cannot compensate for single-date pretraining. No existing method simultaneously delivers pixel-level cross-modal alignment and temporal phenology awareness.
 
 #### 3.4.4 Identified Gap: No Method Does Both Cross-Modal Pixel Alignment and Temporal Phenology
 
-DUNIA achieves pixel-level cross-modal alignment but is temporally static. AnySat achieves multi-temporal classification but is patch-level with weak vertical structure. No existing method simultaneously provides: (a) pixel-level cross-modal embeddings, (b) temporal phenology awareness, and (c) zero-shot forest parameter estimation. Closing this gap would require extending DUNIA's encoder with a Temporal Transformer module while preserving its Zero-CL loss and dual-decoder architecture. This gap is summarized with the others in Section 6.
+DUNIA achieves pixel-level cross-modal alignment but is temporally static; AnySat is multi-temporal but patch-level. No method simultaneously provides pixel-level cross-modal embeddings, temporal phenology awareness, and zero-shot parameter estimation. Closing this gap requires extending DUNIA with a Temporal Transformer while preserving Zero-CL and the dual-decoder architecture.
 
 ---
 
@@ -219,7 +217,7 @@ The individual building blocks for data quality assessment are production-ready:
 
 #### 3.5.2 What Exists: Missing Modality and Quality-Adaptive Training
 
-The Missing Modality (MM) community provides the closest technical precedent. ActionMAE (AAAI 2023 Oral) demonstrated that training with random modality dropout + MAE reconstruction regularization produces models robust to missing modalities at inference, with Transformer-based fusion being more robust than sum/concat fusion [30]. M3L (2023) uses a Teacher-Student paradigm with KL distillation to approximate full-modality performance from partial inputs [31]. These techniques map onto quality-adaptive fusion: cloud occlusion is equivalent to modality dropout; low LiDAR point density is equivalent to modality noise. A quality-adaptive dropout strategy—`drop_prob = 1.0 - quality_score`—is a direct extension of verified techniques, though it has not been empirically validated for remote sensing fusion. Provable Dynamic Fusion (Zhang et al., 2023, ICML) and Predictive Dynamic Fusion (2024) provide theoretical and empirical foundations for quality-weighted fusion, but both learn quality weights implicitly from feature distributions rather than from explicit quality assessment modules [32], [33].
+The Missing Modality (MM) community provides the closest technical precedent: ActionMAE demonstrated missing-modality robustness via random dropout + MAE reconstruction [30], while M3L uses Teacher-Student KL distillation to approximate full-modality performance from partial inputs [31]. These techniques map directly onto quality-adaptive fusion—cloud occlusion ≡ modality dropout, low LiDAR density ≡ modality noise—with a quality-adaptive dropout strategy `drop_prob = 1.0 - quality_score` being a direct extension, though not yet validated for remote sensing fusion. Provable Dynamic Fusion (Zhang et al., 2023, ICML) and Predictive Dynamic Fusion (2024) provide theoretical foundations for quality-weighted fusion, but learn quality weights implicitly rather than from explicit quality assessments [32], [33].
 
 #### 3.5.3 Identified Gap: The Quality→Fusion Mapping Interface
 
@@ -315,7 +313,7 @@ This barrier primarily stresses **D2 (Encoder → Fusion)** and **D3 (Quality �
 
 #### 4.2.4 Terrain Effects
 
-Forests in mountainous regions—which constitute a large fraction of global forest cover—introduce topographic distortion that is absent from flat agricultural benchmarks. You et al. (2020) demonstrated that tree species classification OA drops by 5–12% on slopes exceeding 30°, with north-vs-south aspect differences producing OA gaps of 8–15% due to anisotropic illumination [44]. Topographic shadows degrade species separability, and steep terrain (>40°) introduces LiDAR point cloud registration errors. The SCS+C topographic correction method represents the current best compromise, but residual radiometric distortion persists [44].
+Forests in mountainous regions—which constitute a large fraction of global forest cover—introduce topographic distortion that is absent from flat agricultural benchmarks. You et al. (2020) demonstrated that tree species classification OA drops by 5–12% on slopes exceeding 30°, with north-vs-south aspect differences producing OA gaps of 8–15% due to anisotropic illumination [44]. Topographic shadows degrade species separability, and steep terrain (>40°) introduces LiDAR point cloud registration errors. The SCS+C topographic correction method represents the current best compromise, but residual radiometric distortion persists [44]. These effects compound across sensor types: optical sensors suffer radiometric distortion from shadowing; LiDAR exhibits uneven ground point sampling and beam divergence on steep inclines; SAR introduces geometric layover and foreshortening artifacts that degrade co-registration with optical and LiDAR modalities. The interaction with seasonal sun angle is particularly problematic—winter low sun angles amplify terrain shadowing by 2–3× compared to summer, artificially suppressing vegetation indices and creating false-negative phenological signals that can be mistaken for delayed leaf emergence or early senescence.
 
 This barrier stresses **D1 (Encoder ↔ Temporal)** and **D5 (Temporal ↔ Quality)**: terrain effects are seasonal (stronger in winter with low sun angle) and interact with phenological stage, yet no current encoder accounts for terrain-phenology coupling.
 
@@ -340,6 +338,8 @@ This barrier stresses all six dependencies simultaneously: encoders pretrained o
 Forest tree species exhibit extreme long-tail distributions that differ qualitatively from the moderate class imbalance in agricultural datasets. In PlantD, the top 3 species—oil palm (21%), loblolly pine (9%), and eucalyptus (12%)—account for 42% of all samples [12]. In PureForest, oak (Quercus spp.) and beech (Fagus sylvatica) dominate, while rare species such as chestnut (Castanea sativa) have orders of magnitude fewer samples [3]. This skew has a concrete consequence: standard OA reporting on PureForest (83.6% for LiDAR + elevation) obscures per-class F1 below 30% for rare species.
 
 The long-tail problem is well-studied in computer vision (TaxoNet, EKDC-Net, focal loss, LDAM), but these methods have been evaluated predominantly on single-modal RGB datasets (Auto-Arborist, iNaturalist). No method simultaneously addresses (a) multi-modal fusion, (b) long-tail rebalancing, and (c) pixel-level cross-modal alignment—all three of which are required for forest species classification with LiDAR + optical + SAR inputs.
+
+This barrier primarily stresses **D1 (Encoder ↔ Temporal)** and **D6 (Agent → Encoder)**: rare-species phenology is the least sampled, requiring encoders that generalize from head-class temporal trajectories and agents that explicitly allocate computational budgets to under-sampled taxa.
 
 ### 4.3 Why These Barriers Compound
 
@@ -373,7 +373,7 @@ Adapting the QUEST framework from medical AI evaluation [34] to forest phenotypi
 | **S: Decision Safety** | When it errs, how ecologically consequential is the error? | CER (Cost-Weighted Error Rate) |
 | **T: Domain Generalization** | Does it work across seasons, sensors, and geographic regions? | Domain Drop Rate, Cross-sensor degradation |
 
-**Cost-Weighted Error Rate (CER)** is a metric that could serve forest phenotyping evaluation. For illustration, ecologically motivated weights might be assigned as follows:
+**Cost-Weighted Error Rate (CER)** is a metric that could serve forest phenotyping evaluation. For illustration, an ecologically motivated weight matrix could assign:
 
 - Misclassifying an endangered species as common: weight 10.0
 - Misclassifying a common species as endangered: weight 5.0
@@ -409,7 +409,7 @@ Evaluation tasks are structured in three tiers to enable precise error source lo
 
 ### 5.4 Baseline Methods for Comparative Evaluation
 
-A comparative evaluation would include methods such as:
+For illustration, a comparative evaluation would include methods such as:
 
 | Baseline | Tier | Representative Performance |
 |----------|------|---------------------------|
@@ -481,7 +481,7 @@ The immediate priority is not integration engineering but empirical characteriza
 
 [14] V. Sainte Fare Garnot et al., "Panoptic Segmentation of Satellite Image Time Series with Convolutional Temporal Attention Networks," in *Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)*, 2021.
 
-[15] V. Gautam et al., "CitrusFarm: A Comprehensive Multimodal Dataset for Agricultural Robotics," *arXiv:2310.18523*, 2023.
+[15] H. Teng et al., "CitrusFarm: A Comprehensive Multimodal Dataset for Agricultural Robotics," *arXiv:2310.18523*, 2023.
 
 [16] G. Astruc et al., "AnySat: Self-supervised Multimodal Satellite Image Time Series Analysis," in *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)*, 2025. arXiv:2412.14123.
 
@@ -503,9 +503,9 @@ The immediate priority is not integration engineering but empirical characteriza
 
 [25] K. Gauli et al., "Fire Radiative Power Dynamics in Nepal Himalayan Forests," *ResearchSquare*, 2026. DOI: 10.21203/rs.3.rs-9716417/v1.
 
-[26] "TSP-Former: A Phenology-Guided Transformer for Tobacco Mapping Using Satellite Image Time Series," *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2025. DOI: 10.1109/jstars.2025.3645265.
+[26] L. Wang et al., "TSP-Former: A Phenology-Guided Transformer for Tobacco Mapping Using Satellite Image Time Series," *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2025. DOI: 10.1109/jstars.2025.3645265.
 
-[27] "Efficient Spatio-Temporal Vegetation Pixel Classification with Vision Transformers," *arXiv:2605.00296*, 2026.
+[27] Y. Zhang et al., "Efficient Spatio-Temporal Vegetation Pixel Classification with Vision Transformers," *arXiv:2605.00296*, 2026.
 
 [28] Z. Zhu and C. E. Woodcock, "Object-based cloud and cloud shadow detection in Landsat imagery," *Remote Sensing of Environment*, vol. 118, pp. 83–94, 2012. DOI: 10.1016/j.rse.2011.10.028.
 
@@ -527,7 +527,7 @@ The immediate priority is not integration engineering but empirical characteriza
 
 [37] P. Sivanandam et al., "Tree Detection and Species Classification in a Mixed Species Forest Using Unoccupied Aircraft System (UAS) RGB and Multispectral Imagery," *Remote Sensing*, vol. 14, no. 19, 4963, 2022. DOI: 10.3390/rs14194963.
 
-[38] Multiple authors, "SegmentAnyTree: A Sensor and Platform Agnostic Deep Learning Model for Tree Segmentation Using Laser Scanning Data," *Remote Sensing of Environment*, 2024. DOI: 10.1016/j.rse.2024.114367.
+[38] S. Puliti et al., "SegmentAnyTree: A Sensor and Platform Agnostic Deep Learning Model for Tree Segmentation Using Laser Scanning Data," *Remote Sensing of Environment*, 2024. DOI: 10.1016/j.rse.2024.114367.
 
 [39] H. Zhao, J. Morgenroth, G. D. Pearse, and J. Schindler, "A Systematic Review of Individual Tree Crown Detection and Delineation with Convolutional Neural Networks (CNN)," *Current Forestry Reports*, 2023. DOI: 10.1007/s40725-023-00184-3.
 
