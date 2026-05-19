@@ -82,16 +82,17 @@
 
 **操作**：
 1. 源域 crown crops 与目标域 crown crops 统一预处理：bbox 外扩 10% padding，固定 resize 至 224×224
-2. 用 OpenCLIP 对源域和目标域分别提取特征
-3. 设置两组分类器：
-   - **Source SVM**：源域 CLIP 特征训练，目标域推理（跨域迁移，核心指标）
-   - **Target linear probe**：目标域 CLIP 特征 + SVM 训练+测试（特征可迁移性上限，对照）
+2. 用 OpenCLIP ViT-L/14 和 DINOv2 ViT-L/14 分别对源域和目标域提取特征（两组 backbone，并行对比）
+3. 针对每组特征，设置两组分类器：
+   - **Source SVM**：源域特征训练，目标域推理（跨域迁移，核心指标）
+   - **Target linear probe**：目标域特征 + SVM 训练+测试（特征可迁移性上限，对照）
 4. 计算 Domain Drop Rate = (target-probe OA − source-SVM OA) / target-probe OA
-5. Per-species 精度对比 + 可选 CLIP vs DINOv2 特征对比
+5. 对比 CLIP vs DINOv2 特征的跨域退化幅度差异
 
 **关键说明**：
-- Target linear probe 是必须的对照：如果目标域 CLIP 特征本身可分（target-probe OA 高），但 source-SVM OA 低 → 分类器决策边界不适应，而非特征本身不具备可分性
-- 若 target-probe OA 本身已处于低位，表明特征对此混交林数据无效，已达性能上限
+- Target linear probe 是必须的对照：若目标域特征本身可分（target-probe OA 高），但 source-SVM OA 低，则分类器决策边界不适应
+- CLIP vs DINOv2 并行测试为必需：DINOv2 基于自监督视觉特征，CLIP 基于视觉-语言对齐，二者在林业场景的泛化特性可能存在显著差异
+- 若两种 backbone 的 target-probe OA 均处于低位，表明通用预训练特征对此混交林数据已达性能上限
 
 **产出**：整体和 per-species 跨域退化幅度，源域→目标域混淆矩阵变化
 
@@ -140,14 +141,26 @@
 
 **操作**：
 1. 从每个 crown 的 LiDAR 点云中提取结构特征向量（max height、height percentiles p25-p50-p75-p95、point density、回波比例），使用 lidR 或 laspy
-2. 构建三组特征进行 SVM 训练+测试（5 次 spatial block split 重复，同 Exp A 协议）：
+2. 构建三组特征进行 Random Forest 训练+测试（5 次 spatial block split 重复，同 Exp A 协议）：
    - RGB-only（CLIP 768-d）
    - LiDAR-only（结构特征向量）
    - RGB+LiDAR（拼接）
-3. 对比三者的 mean ± std OA
-4. 对比三类特征在 Head 类和 Tail 类上的增益差异
+3. 对比三者的 mean ± std OA。使用 Random Forest 而非 SVM 的原因是 RF 对异构特征（RGB 语义 + LiDAR 数值）的鲁棒性通常优于 SVM
 
 **产出**：LiDAR 加入后的整体增益和 per-species 增益分布
+
+---
+
+## 评估指标
+
+除 OA、macro-F1、per-species F1 外，增加两项森林特有指标：
+
+| 指标 | 计算 | 目的 |
+|------|------|------|
+| **Tail-Recall@K** | K% 最少样本树种的 average recall | 稀有树种是否被系统性牺牲 |
+| **Cost-Weighted Error Rate (CER)** | Σ(生态代价权重 × 误分类数) / 总决策数 | 濒危种误报为常见种的代价高于逆向（权重由领域专家定义） |
+
+CER 权重示例（用于 Exp E 的 per-species 分析）：濒危种→常见种 w=10.0；常见种→濒危种 w=5.0；同属混淆 w=2.0；跨属混淆 w=1.0。
 
 ---
 
@@ -157,7 +170,7 @@
 pip install deepforest          # 树冠检测（NEON 预训练 RetinaNet）
 pip install open_clip_torch     # CLIP ViT-L/14 特征提取
 pip install scikit-learn        # SVM + 评估指标
-pip install torch torchvision   # PyTorch + DINOv2（备选 backbone）
+pip install torch torchvision   # PyTorch + DINOv2（核心 backbone）
 pip install rasterio            # 栅格读写
 pip install geopandas           # 空间数据处理
 pip install laspy               # LiDAR 点云特征提取
