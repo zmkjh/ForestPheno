@@ -1,6 +1,6 @@
 # 混交林树种分类跨域迁移 Baseline — 实验方案
 
-> **场景**: 纯林公开数据（PureForest/NEON）上预训练的树种分类模型，不做 fine-tune，直接迁移到本地混交林数据，诊断失败模式。
+> **场景**: 纯林公开数据（PureForest/NEON）上预训练的树种分类模型，未经 fine-tune，直接迁移至本地混交林数据，分析失败模式。
 > **约束**: 单人操作，单 GPU，零自研代码。
 
 ---
@@ -8,7 +8,7 @@
 ## 前置步骤：数据准备
 
 ### 输入
-- 一块混交林的无人机 RGB 航片（GSD ≤ 10 cm）
+- 一片混交林的无人机 RGB 航片（GSD ≤ 10 cm）
 - 同区域的 LiDAR 点云（点密度 > 5 pts/m²）
 - 样地实测记录（树种、坐标、胸径、树高）
 
@@ -39,9 +39,9 @@
 4. 报告 mean ± std：OA、macro-F1、per-species F1
 
 **关键说明**：
-- 使用 spatial block split，禁止 random split（同一树冠不同像素泄露会虚高 10-20 pp）
+- 使用 spatial block split，禁止 random split（同一树冠内不同像素的数据泄露可导致精度虚高 10-20 个百分点）
 - 固定 random_state=42，确保可复现；在不同 split 间改变分割 seed
-- 多次重复是必需的——SVM 对 split 敏感，单次结果不可靠
+- 多次重复为必需步骤：SVM 对数据划分敏感，单次结果不具备统计可靠性
 
 **产出**：域内分类精度上限 + 域内 top-5 混淆对
 
@@ -55,8 +55,8 @@
 - 本地混交林航片 + 标注树冠 bbox
 
 **操作**：
-1. **GSD 归一化**：用 rasterio 将航片重采样至 0.1 m GSD（DeepForest 训练分辨率）。不做此步骤会导致 recall 下降被错误归因为模型差
-2. DeepForest（NEON 航片预训练）直接推理，不做 fine-tune
+1. **GSD 归一化**：用 rasterio 将航片重采样至 0.1 m GSD（DeepForest 训练分辨率）。未执行此步骤会导致 recall 下降被错误归因于模型性能不足
+2. DeepForest（NEON 航片预训练）直接推理，未经 fine-tune
 3. 与标注 bbox 做 IoU ≥ 0.5 匹配，统计 recall、precision、F1
 4. 分层统计：林内 vs 林缘、开阔冠区 vs 郁闭冠区、大冠 vs 小冠
 
@@ -82,8 +82,8 @@
 5. Per-species 精度对比 + 可选 CLIP vs DINOv2 特征对比
 
 **关键说明**：
-- Target linear probe 是必须的对照：如果目标域 CLIP 特征本身可分（target-probe OA 高），但 source-SVM OA 低 → 分类器决策边界不适应，不是特征不行
-- 如果 target-probe OA 已经很低 → 特征本身对这片混交林无效，已到天花板
+- Target linear probe 是必须的对照：如果目标域 CLIP 特征本身可分（target-probe OA 高），但 source-SVM OA 低 → 分类器决策边界不适应，而非特征本身不具备可分性
+- 若 target-probe OA 本身已处于低位，表明特征对此混交林数据无效，已达性能上限
 
 **产出**：整体和 per-species 跨域退化幅度，源域→目标域混淆矩阵变化
 
@@ -91,7 +91,7 @@
 
 ## 实验 D：失败归因
 
-**目的**：区分"没找到树"和"找到了但认错了"。
+**目的**：区分"树冠未检出"与"检测成功但分类错误"。
 
 **输入**：实验 B 的检测结果 + 实验 C 的分类结果 + 标注 bbox
 
@@ -129,8 +129,8 @@ pip install matplotlib seaborn  # 可视化
 | 样地坐标与影像偏移 > 5m | 先做人工 co-registration，挑 20 棵明显树对特征点 |
 | 样地实测记录只有林分统计，无单树坐标 | 改用目视解译手工标注 200 棵树作为 ground-truth |
 | 纯林公开数据物种与本地完全不重叠 | 降级为 genus-level 分类，或只用形态特征不依赖物种匹配 |
-| DeepForest 零样本检测率极低 | 不 fine-tune，如实报告退化幅度，检测结果作为"上限对比"而非流水线依赖 |
-| 混交林内纯林斑块不够大 | 降级为"全混交林域内 baseline + 跨域退化"，不做纯林 vs 混交林内部分层 |
+| DeepForest 零样本检测率极低 | 不执行 fine-tune，如实报告退化幅度，检测结果作为"上限对比"而非流水线依赖 |
+| 混交林内纯林斑块不够大 | 降级为"全混交林域内 baseline + 跨域退化"，不执行纯林与混交林内部分层分析 |
 
 ---
 
@@ -138,9 +138,9 @@ pip install matplotlib seaborn  # 可视化
 
 4 个实验串联回答一条链：
 
-1. 域内能做到多好？（上限，mean ± std over 5 splits）
-2. 预训练检测器能找到多少棵树？（检测退化，分层统计）
-3. 纯林分类器放混交林退化多少？（跨域迁移 + target linear probe 对照）
-4. 退化中，检测失败 vs 分类失败各占多少？（两类归因）
+1. 域内性能上限？（上限，mean ± std over 5 splits）
+2. 预训练检测器的树冠检出率？（检测退化，分层统计）
+3. 纯林分类器迁移至混交林的退化幅度？（跨域迁移 + target linear probe 对照）
+4. 退化中检测失败与分类错误各自占比？（两类归因）
 
-四个答案合起来，就是一份完整的跨域迁移诊断报告。
+四组结论综合，即为一份完整的跨域迁移诊断报告。
