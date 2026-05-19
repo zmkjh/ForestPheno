@@ -116,6 +116,41 @@
 
 ---
 
+## 实验 E：长尾退化分析
+
+**目的**：评估稀有树种在跨域迁移中是否被系统性牺牲——即 Head-Tail Gap 在跨域条件下是否扩大。
+
+**输入**：实验 C 的 per-species 结果 + 样地树种频率分布
+
+**操作**：
+1. 按训练样本数将树种分为 Head（≥ 样本中位数）和 Tail（< 中位数）
+2. 在实验 C 的 source-SVM 和 target-probe 两组结果上分别计算 Head-Tail Gap = F1(head) − F1(tail)
+3. 对比两组 Head-Tail Gap：跨域迁移后 Tail 类 F1 相对于 Head 类的下降是否更大
+4. 输出 Head vs Tail per-class F1 对比表
+
+**产出**：跨域迁移是否放大了长尾分布的不利影响
+
+---
+
+## 实验 F：LiDAR 融合消融
+
+**目的**：验证 LiDAR 结构信息能否缓解跨域退化——为后续系统设计提供 LiDAR 投入决策依据。
+
+**输入**：本地混交林 crown crops（RGB + 对应 LiDAR 点云子集）+ 树种标签
+
+**操作**：
+1. 从每个 crown 的 LiDAR 点云中提取结构特征向量（max height、height percentiles p25-p50-p75-p95、point density、回波比例），使用 lidR 或 laspy
+2. 构建三组特征进行 SVM 训练+测试（5 次 spatial block split 重复，同 Exp A 协议）：
+   - RGB-only（CLIP 768-d）
+   - LiDAR-only（结构特征向量）
+   - RGB+LiDAR（拼接）
+3. 对比三者的 mean ± std OA
+4. 对比三类特征在 Head 类和 Tail 类上的增益差异
+
+**产出**：LiDAR 加入后的整体增益和 per-species 增益分布
+
+---
+
 ## 工具清单
 
 ```
@@ -125,6 +160,7 @@ pip install scikit-learn        # SVM + 评估指标
 pip install torch torchvision   # PyTorch + DINOv2（备选 backbone）
 pip install rasterio            # 栅格读写
 pip install geopandas           # 空间数据处理
+pip install laspy               # LiDAR 点云特征提取
 pip install matplotlib seaborn  # 可视化
 ```
 
@@ -144,11 +180,11 @@ pip install matplotlib seaborn  # 可视化
 
 ## 核心产出逻辑
 
-4 个实验串联回答一条链：
+1. 域内性能上限（mean ± std over 5 splits）
+2. 预训练检测器的树冠检出率（分层统计）
+3. 纯林分类器迁移至混交林的退化幅度（跨域迁移 + target linear probe 对照）
+4. 退化中检测失败与分类错误各自占比（两类归因）
+5. 稀有树种在跨域迁移中是否被系统性牺牲（Head-Tail Gap 跨域变化）
+6. LiDAR 结构信息能否缓解跨域退化（单模态 vs 多模态消融）
 
-1. 域内性能上限？（上限，mean ± std over 5 splits）
-2. 预训练检测器的树冠检出率？（检测退化，分层统计）
-3. 纯林分类器迁移至混交林的退化幅度？（跨域迁移 + target linear probe 对照）
-4. 退化中检测失败与分类错误各自占比？（两类归因）
-
-四组结论综合，即为一份完整的跨域迁移诊断报告。
+六组结论综合，即为一份完整的跨域迁移诊断报告。
