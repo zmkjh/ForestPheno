@@ -27,7 +27,7 @@
 ```
 ├── README.md
 ├── LICENSE                     # MIT
-├── outputs/                    # 干净展示层（论文终稿 + 实验方案）
+├── outputs/                    # 展示层（论文 + 实验方案）
 │   ├── README.md
 │   ├── baseline_plan.md
 │   └── papers/
