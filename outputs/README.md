@@ -4,9 +4,9 @@
 
 | 文件 | 类型 | 状态 |
 |------|------|------|
-| `papers/综述_design_space_oriented.md` | 系统性分析综述（英文） | 可投 |
-| `papers/综述_design_space_oriented_CN.md` | 系统性分析综述（中文） | 可投 |
-| `papers/综述_traditional_survey.md` | 传统描述性综述（英文） | 可投 |
+| `papers/Vegetation_Phenotyping_AI_Forest_Transfer.md` | 系统性分析综述（英文） | 可投 |
+| `papers/Vegetation_Phenotyping_AI_Forest_Transfer_CN.md` | 系统性分析综述（中文） | 可投 |
+| `papers/DL_Forest_Phenotyping_Systematic_Survey_2023-2026.md` | 传统描述性综述（英文） | 可投 |
 
 ## 实验方案
 
