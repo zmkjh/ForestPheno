@@ -2,45 +2,50 @@
 
 基于 LLM 编排的多模态林木表型分析系统的文献调研与设计空间分析。
 
-## 核心输出
+## 综述论文（3 篇）
 
-| 文件 | 说明 |
-|------|------|
-| `papers_data/综述_design_space_oriented.md` | 英文学术综述（设计空间导向，34篇引用） |
-| `papers_data/综述_design_space_oriented_CN.md` | 中文版 |
-| `papers_data/综述_traditional_survey.md` | 英文学术综述（传统时间线/方法论，42篇引用） |
-| `papers_data/surveys/` | 15篇设计空间调研 + 1篇交叉验证 + 3篇事实核查 |
-| `papers_data/missing_papers.md` | 缺失论文下载清单 |
+| 论文 | 语言 | 类型 | 说明 |
+|------|------|------|------|
+| `papers_data/综述_design_space_oriented.md` | EN | 设计空间综述 | 五维方法论空间分析（对比学习/动态融合/Agent编排/物候/质量感知），六类森林传输壁垒 |
+| `papers_data/综述_design_space_oriented_CN.md` | CN | 设计空间综述 | 同上，中文版 |
+| `papers_data/综述_traditional_survey.md` | EN | 描述性综述 | 按时间线与方法论展开，覆盖 2023–2026 森林 AI 表型全领域 |
+
+**两类综述的区别**：设计空间综述以方法论维度为轴，识别设计选择与组合空间，不含 prescriptive 建议；描述性综述以领域发展脉络为轴，系统归纳已有工作。
+
+## 专题调研（14 篇）
+
+`papers_data/surveys/forestry/` — 面向林业场景的深度专题，涵盖单木检测、长尾物种、三维结构、野外鲁棒性、混交林缺口、中文林业文献等方向。
+
+`papers_data/surveys/`（根级 16 篇）— 设计空间调研（编码器、融合、Agent 框架、时序物候、质量感知、评估长尾等）+ 事实核查 + 交叉验证。
+
+## 实验方案（6 组）
+
+`docs/baseline_plan.md` / `outputs/baseline_plan.md` — 混交林跨域迁移诊断实验。
 
 ## 目录结构
 
 ```
 ├── README.md
-├── .gitignore
-├── batch_download.py          # PDF批量下载 + curl校验
-├── crawl_targeted_papers.py   # OpenAlex论文爬虫
-├── crawl_latest_papers.py     # 最新论文爬虫
-├── crawl_papers.py            # 元数据爬虫
-├── download_pdfs.py           # 下载脚本
-├── filter_papers.py           # 关键词筛选
-└── papers_data/
-    ├── targeted_forestry_ai_papers.csv    # 122篇定向论文
-    ├── latest_forestry_ai_papers.csv      # 98篇最新论文
-    ├── selected_forestry_ai_papers.csv    # 5篇精选论文
-    ├── forestry_papers_filtered.csv       # 14篇经典论文
-    ├── MDPI_manual_download.md            # MDPI手动下载清单
-    ├── missing_papers.md                  # 缺失论文清单
-    ├── surveys/                           # 设计空间调研 + 事实核查
-    └── pdfs_downloaded/                   # 分类PDF（00_Legacy ~ 10_QualityAwareness）
+├── LICENSE                     # MIT
+├── outputs/                    # 干净展示层（论文终稿 + 实验方案）
+│   ├── README.md
+│   ├── baseline_plan.md
+│   └── papers/
+├── papers_data/                # 文献数据、综述、调研
+│   ├── 综述_design_space_oriented.md
+│   ├── 综述_design_space_oriented_CN.md
+│   ├── 综述_traditional_survey.md
+│   ├── surveys/
+│   └── pdfs_downloaded/
+├── docs/
+│   └── baseline_plan.md
+├── batch_download.py
+├── crawl_*.py
+├── download_pdfs.py
+├── filter_papers.py
+└── .gitignore
 ```
 
-## 论文状态
+## 许可
 
-- **设计空间综述**：英文+中文双版本，48条引用连续无空洞，~10,300词
-  - 五维方法论全景（对比学习/动态融合/Agent编排/物候/质量感知）
-  - 六个森林传输壁垒（冠层遮挡、混交林、生物量饱和、地形效应、泛化退化、长尾分布）
-  - 零 prescriptive 语言，纯分析性综述
-- **传统综述**：英文，10章纯描述性综述，42条引用，覆盖2023-2026森林AI表型全领域
-- **数据质量**：53项原文逐条核对 + 180项交叉验证，修复5处错误
-- **PDF**：100+篇下载，分11个类别目录
-- **调研**：15篇设计空间 + 8篇林业聚焦 + 4篇事实核查
+MIT
